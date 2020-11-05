@@ -35,13 +35,21 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
     'bootstrap4',
-    'tom_alerts_dash'
+    'tom_alerts_dash',
+    'tom_alerts',
+    'tom_targets',
+    'tom_observations',
+    'tom_dataproducts',
+    'guardian',
+    'django.contrib.sites',
 ]
+
+DATA_PRODUCT_TYPES = {}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
