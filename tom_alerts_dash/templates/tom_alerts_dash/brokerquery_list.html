@@ -1,6 +1,9 @@
+{% extends 'tom_common/base.html' %}
 {% load plotly_dash static bootstrap4 %}
 {% block content %}
+{% plotly_header %}
 <div class="{% plotly_class name='BrokerQueryListViewDash' %}" style="height: 100%; width: 100%">
-  {% plotly_app name="BrokerQueryListViewDash" ratio=1 %}
+  {% plotly_direct name="BrokerQueryListViewDash" %}
 </div>
+{% plotly_footer %}
 {% endblock %}

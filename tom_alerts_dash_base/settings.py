@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'tom_dataproducts',
     'guardian',
     'django.contrib.sites',
+    'tom_setup'
 ]
 
 DATA_PRODUCT_TYPES = {}
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_plotly_dash.middleware.BaseMiddleware',
 ]
 
 ROOT_URLCONF = 'tom_alerts_dash_base.urls'
