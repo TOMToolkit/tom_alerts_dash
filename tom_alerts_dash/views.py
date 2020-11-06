@@ -3,5 +3,9 @@ from django.views.generic import TemplateView
 
 
 # class BrokerQueryListView(LoginRequiredMixin, TemplateView):
-class BrokerQueryListView(TemplateView):
-    template_name = 'tom_alerts_dash/brokerquery_list.html'
+class BrokerQueryBrowseView(TemplateView):
+    template_name = 'tom_alerts_dash/brokerquery_browse.html'
+
+
+class RunQueryView(TemplateView):
+    template_name = 'tom_alerts_dash/brokerquery_browse.html'
