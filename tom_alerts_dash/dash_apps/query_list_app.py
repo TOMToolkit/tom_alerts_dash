@@ -125,25 +125,11 @@ def create_targets(selected_rows, row_data, create_targets):
         errors = []
         successes = []
         for row in selected_rows:
-            print(row_data[row])
             target = broker_client._broker.to_target(row_data[row]['alert'])
-            # alert = row_data[row]
-            # data = {'ra': alert['right_ascension'], 'dec': alert['declination'], 'type': 'SIDEREAL',
-            #         'targetextra_set': [], 'aliases': []}
-            # if alert['topic'] == 'lvc-counterpart':
-            #     data['name'] = alert['alert_identifier']
-            # elif alert['topic'] == 'gcn':
-            #     data['name'] = f'SCiMMA-{alert["id"]}'
-            # serializer = TargetSerializer(data=data)
-            # serializer.is_valid()
             if target:
                 successes.append(target.name)
             else:
                 errors.append(target.name)
     
-        print(create_targets)
-        print(successes)
-
         if successes:
-            print('here')
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
