@@ -8,6 +8,7 @@ import dash_html_components as dhc
 from dash_table import DataTable
 from django.conf import settings
 from django_plotly_dash import DjangoDash
+from django.shortcuts import reverse
 
 from tom_alerts.alerts import get_service_class, get_service_classes
 
@@ -42,6 +43,9 @@ broker_client = BrokerClient('SCIMMA')
 app.layout = dbc.Container([
     dhc.Div([
         dhc.Div(
+            id='redirection'
+        ),
+        dhc.Div(
             dhc.H3('Browse Alerts')
         ),
         dhc.Div(
@@ -55,7 +59,10 @@ app.layout = dbc.Container([
         ),
         dhc.Div(
             dhc.P(
-                dbc.Button('Create targets from selected', className='btn btn-outline-primary')
+                dbc.Button('Create targets from selected', 
+                           id='create-targets-btn',
+                           className='btn btn-outline-primary'
+                )
             )
         ),
         dhc.Div(  # Filters go here
@@ -105,3 +112,38 @@ def alerts_table_filter(broker_selection, filter_query):
     print(f'parameters: {parameters}')
 
     return broker_client.get_columns(), broker_client.get_alerts(parameters)
+
+
+@app.callback(
+    Output('redirection', 'children'),
+    [Input('alerts-table', 'derived_virtual_selected_rows'),
+     Input('alerts-table', 'derived_virtual_data'),
+     Input('create-targets-btn', 'n_clicks_timestamp')]
+)
+def create_targets(selected_rows, row_data, create_targets):
+    if create_targets:
+        errors = []
+        successes = []
+        for row in selected_rows:
+            print(row_data[row])
+            target = broker_client._broker.to_target(row_data[row]['alert'])
+            # alert = row_data[row]
+            # data = {'ra': alert['right_ascension'], 'dec': alert['declination'], 'type': 'SIDEREAL',
+            #         'targetextra_set': [], 'aliases': []}
+            # if alert['topic'] == 'lvc-counterpart':
+            #     data['name'] = alert['alert_identifier']
+            # elif alert['topic'] == 'gcn':
+            #     data['name'] = f'SCiMMA-{alert["id"]}'
+            # serializer = TargetSerializer(data=data)
+            # serializer.is_valid()
+            if target:
+                successes.append(target.name)
+            else:
+                errors.append(target.name)
+    
+        print(create_targets)
+        print(successes)
+
+        if successes:
+            print('here')
+            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
