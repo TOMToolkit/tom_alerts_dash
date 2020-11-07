@@ -37,7 +37,7 @@ class BrokerClient:
         return self._broker.get_dash_data(parameters)
 
 
-broker_client = BrokerClient('SCIMMA')
+broker_client = BrokerClient('MARS')
 
 
 app.layout = dbc.Container([
@@ -46,7 +46,8 @@ app.layout = dbc.Container([
             id='redirection'
         ),
         dhc.Div(
-            dhc.H3('Browse Alerts')
+            dhc.H3(f'{broker_client._broker.name} Alerts'),
+            id='page-header'
         ),
         dhc.Div(
             dhc.P(
@@ -61,8 +62,9 @@ app.layout = dbc.Container([
             dhc.P(
                 dbc.Button('Create targets from selected', 
                            id='create-targets-btn',
-                           className='btn btn-outline-primary'
-                )
+                           outline=True,
+                           color='info'
+                ),
             )
         ),
         dhc.Div(  # Filters go here
@@ -84,6 +86,25 @@ app.layout = dbc.Container([
                 page_current=0,
                 page_size=20,
                 page_action='custom',
+                style_cell={
+                    'textAlign': 'right'
+                },
+                style_data_conditional=[
+                    {
+                        'if': {'row_index': 'odd'},
+                        'backgroundColor': 'rgb(233, 243, 256)'
+                    }
+                ],
+                style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                style_filter={
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'backgroundColor': 'rgb(256, 233, 233)'
+                },
+                style_header={
+                    'backgroundColor': 'rgb(213, 223, 242)', 
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'fontWeight': 'bold'
+                },
             ),
             id='alerts-table-container'
         ),
@@ -93,7 +114,8 @@ app.layout = dbc.Container([
 
 @app.callback(
     [Output('alerts-table', 'columns'),
-     Output('alerts-table', 'data')],
+     Output('alerts-table', 'data'),
+     Output('page-header', 'children')],
     [Input('broker-selection', 'value'),
      Input('alerts-table', 'filter_query')]
 )
@@ -111,7 +133,7 @@ def alerts_table_filter(broker_selection, filter_query):
             parameters[col_name] = {'operator': operator, 'value': filter_value}
     print(f'parameters: {parameters}')
 
-    return broker_client.get_columns(), broker_client.get_alerts(parameters)
+    return broker_client.get_columns(), broker_client.get_alerts(parameters), dhc.H3(f'{broker_client._broker.name} Alerts')
 
 
 @app.callback(
