@@ -26,6 +26,10 @@ class BrokerClient:
     def broker(self):
         return self._broker
 
+    @broker.getter
+    def broker(self):
+        return self._broker.name
+
     @broker.setter
     def broker(self, new_broker_name):
         self._broker = get_service_class(new_broker_name)()
@@ -77,34 +81,44 @@ app.layout = dbc.Container([
             id='alerts-table-filters-container'
         ),
         dhc.Div(  # Alerts datatable goes here
-            DataTable(
-                id='alerts-table',
-                columns=broker_client.get_columns(),
-                data=broker_client.get_alerts({}),
-                filter_action='custom',
-                row_selectable='multi',
-                page_current=0,
-                page_size=20,
-                page_action='custom',
-                style_cell={
-                    'textAlign': 'right'
-                },
-                style_data_conditional=[
-                    {
-                        'if': {'row_index': 'odd'},
-                        'backgroundColor': 'rgb(233, 243, 256)'
-                    }
-                ],
-                style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-                style_filter={
-                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                    'backgroundColor': 'rgb(256, 233, 233)'
-                },
-                style_header={
-                    'backgroundColor': 'rgb(213, 223, 242)', 
-                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                    'fontWeight': 'bold'
-                },
+            dcc.Loading(children=[
+                DataTable(
+                    id='alerts-table',
+                    columns=broker_client.get_columns(),
+                    data=broker_client.get_alerts({}),
+                    filter_action='custom',
+                    row_selectable='multi',
+                    page_current=0,
+                    page_size=20,
+                    page_action='custom',
+                    css=[
+                        {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+                    ],
+                    style_cell_conditional=[
+                        {
+                            # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
+                        }
+                    ],
+                    style_cell={
+                        'textAlign': 'right'
+                    },
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'},
+                            'backgroundColor': 'rgb(233, 243, 256)'
+                        },
+                    ],
+                    style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                    style_filter={
+                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                        'backgroundColor': 'rgb(256, 233, 233)'
+                    },
+                    style_header={
+                        'backgroundColor': 'rgb(213, 223, 242)', 
+                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                        'fontWeight': 'bold'
+                    },
+                )], type='dot', fullscreen=True
             ),
             id='alerts-table-container'
         ),
@@ -117,21 +131,26 @@ app.layout = dbc.Container([
      Output('alerts-table', 'data'),
      Output('page-header', 'children')],
     [Input('broker-selection', 'value'),
-     Input('alerts-table', 'filter_query')]
+     Input('alerts-table', 'filter_query'),
+     Input('alerts-table', 'page_current'),
+     Input('alerts-table', 'page_size')]
 )
-def alerts_table_filter(broker_selection, filter_query):
+def alerts_table_filter(broker_selection, filter_query, page_current, page_size):
     print(filter_query)
-    if broker_selection:
+    if broker_selection and broker_selection != broker_client.broker:
         print(broker_selection)
         broker_client.broker = broker_selection
+        page_current = 0
 
-    parameters = {}
+    parameters = {'page_num': page_current, 'page_size': page_size}
     if filter_query:
         for filter_part in filter_query.split(' && '):
             col_name, operator, filter_value = filter_part.split()
             col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
             parameters[col_name] = {'operator': operator, 'value': filter_value}
     print(f'parameters: {parameters}')
+
+    alerts = broker_client.get_alerts(parameters)
 
     return broker_client.get_columns(), broker_client.get_alerts(parameters), dhc.H3(f'{broker_client._broker.name} Alerts')
 
@@ -151,7 +170,7 @@ def create_targets(selected_rows, row_data, create_targets):
             if target:
                 successes.append(target.name)
             else:
-                errors.append(target.name)
+                errors.append(target.name)  # TODO: How to handle errors?
     
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
