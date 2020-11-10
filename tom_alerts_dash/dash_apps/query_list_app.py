@@ -145,12 +145,10 @@ def alerts_table_filter(broker_selection, filter_query, page_current, page_size)
     parameters = {'page_num': page_current, 'page_size': page_size}
     if filter_query:
         for filter_part in filter_query.split(' && '):
-            col_name, operator, filter_value = filter_part.split()
+            col_name, operator, filter_value = filter_part.split(' ', 2)
             col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
             parameters[col_name] = {'operator': operator, 'value': filter_value}
     print(f'parameters: {parameters}')
-
-    alerts = broker_client.get_alerts(parameters)
 
     return broker_client.get_columns(), broker_client.get_alerts(parameters), dhc.H3(f'{broker_client._broker.name} Alerts')
 
