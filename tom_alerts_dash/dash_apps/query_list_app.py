@@ -166,7 +166,7 @@ def create_targets(selected_rows, row_data, create_targets):
         for row in selected_rows:
             target = broker_client._broker.to_target(row_data[row]['alert'])
             if target:
-                successes.append(target.name)
+                successes.append(target.name)  # TODO: How to indicate successes?
             else:
                 errors.append(target.name)  # TODO: How to handle errors?
     
