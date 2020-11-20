@@ -37,9 +37,6 @@ class BrokerClient:
     def get_callback_inputs(self):
         return self._broker.get_callback_inputs()
 
-    def get_callback_output(self):
-        return self._broker.get_callback_output()
-
     def get_filter_callback(self):
         return self._broker.filter_callback
 
@@ -76,10 +73,11 @@ app.layout = dbc.Container([
         ),
         dhc.Div(
             dhc.P(
-                dbc.Button('Create targets from selected', 
-                           id='create-targets-btn',
-                           outline=True,
-                           color='info'
+                dbc.Button(
+                    'Create targets from selected', 
+                    id='create-targets-btn',
+                    outline=True,
+                    color='info'
                 ),
             )
         ),
@@ -133,9 +131,15 @@ app.layout = dbc.Container([
 ])
 
 # Create the callback for the initial broker
+# TODO: default behavior on this table probably shouldn't be to load MARS alert, but rather prompt for
+# broker selection
 app.callback(
-    broker_client.get_callback_output(), broker_client.get_callback_inputs()
+    Output('alerts-table', 'data'), broker_client.get_callback_inputs()
 )(broker_client._broker.filter_callback)
+
+# TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
+# dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
+# this is the only way to support different callbacks per broker.
 
 @app.callback(
     [Output('alerts-table', 'columns'),
@@ -143,14 +147,16 @@ app.callback(
     [Input('broker-selection', 'value')],
 )
 def alerts_table_filter(broker_selection):
-    for callback in app._callback_sets:
-        print(f'callback: {callback}')
+
     if broker_selection and broker_selection != broker_client.broker:
         print(broker_selection)
         broker_client.broker = broker_selection
         # TODO: remove the old callback from app._callback_sets
-        app.callback(broker_client.get_callback_output(), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
+        app._callback_sets.pop(0)
+        app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
         page_current = 0
+    for callback in app._callback_sets:
+        print(f'callback: {callback}')
 
     # TODO: Add example filter queries
     # parameters = {'page_num': page_current, 'page_size': page_size}
@@ -183,9 +189,8 @@ def create_targets(selected_rows, row_data, create_targets):
                 successes.append(target.name)  # TODO: How to indicate successes?
             else:
                 errors.append(target.name)  # TODO: How to handle errors?
+            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
+            # add a link to go to the target list in the success message
     
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
-
-for callback in app._callback_sets:
-    print(f'callback: {callback}')

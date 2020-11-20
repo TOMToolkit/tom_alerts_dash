@@ -1,4 +1,5 @@
-from dash.dependencies import Input, Output
+from dash.dependencies import Input
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import dash_html_components as dhc
 import dash_core_components as dcc
@@ -13,17 +14,23 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
 
     # TODO: don't trigger callback unless all of ra/dec/cone are populated
     def filter_callback(self, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
-        print('test filter')
+        cone_search = ''
+        if any([cone_ra, cone_dec, cone_radius]):
+            if all([cone_ra, cone_dec, cone_radius]):
+                cone_search = ','.join([cone_ra, cone_dec, cone_radius])
+            else:
+                raise PreventUpdate
+
         form = MARSQueryForm({'query_name': 'dash query', 'broker': self.name})
         return self.get_dash_data({
             'objectId': objectId,
             'magpsf__gte': magpsf__gte,
             'rb__gte': rb__gte,
-            'cone': ','.join([cone_ra, cone_dec, cone_radius]) if cone_ra and cone_dec and cone_radius else ''
+            'cone': cone_search
         })
 
+
     def get_callback_inputs(self):
-        print('input')
         inputs = [
             Input('objname-search', 'value'),
             Input('cone-ra', 'value'),
@@ -33,10 +40,6 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             Input('rb-min', 'value'),
         ]
         return inputs
-
-    def get_callback_output(self):
-        print('output')
-        return Output('alerts-table', 'data')
 
     # TODO: make this look less ugly
     def get_dash_filters(self):
@@ -84,6 +87,15 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         ])
         return filters
 
+    def get_dash_columns(self):
+        return [
+            {'id': 'objectId', 'name': 'Name', 'type': 'text', 'presentation': 'markdown'},
+            {'id': 'ra', 'name': 'Right Ascension', 'type': 'text'},
+            {'id': 'dec', 'name': 'Declination', 'type': 'text'},
+            {'id': 'magpsf', 'name': 'Magnitude', 'type': 'text'},
+            {'id': 'rb', 'name': 'Real-Bogus Score', 'type': 'text'},
+        ]
+
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []
         for alert in alerts:
@@ -111,15 +123,6 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
 
     #     alerts = self.fetch_alerts(parameters)  # TODO: this returns an iterator--how to find number of pages?
     #     return alerts
-
-    def get_dash_columns(self):
-        return [
-            {'id': 'objectId', 'name': 'Name', 'type': 'text', 'presentation': 'markdown'},
-            {'id': 'ra', 'name': 'Right Ascension', 'type': 'text'},
-            {'id': 'dec', 'name': 'Declination', 'type': 'text'},
-            {'id': 'magpsf', 'name': 'Magnitude', 'type': 'text'},
-            {'id': 'rb', 'name': 'Real-Bogus Score', 'type': 'text'},
-        ]
 
     def get_dash_data(self, filters):
         alerts = self._request_alerts(filters)['results']

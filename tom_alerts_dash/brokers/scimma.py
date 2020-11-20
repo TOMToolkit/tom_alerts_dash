@@ -1,7 +1,9 @@
 from tom_alerts_dash.alerts import GenericDashBroker
 from tom_common.templatetags.tom_common_extras import truncate_number
-from tom_scimma.scimma import SCIMMABroker, GRACE_DB_URL
+from tom_scimma.scimma import SCIMMABroker
 from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
+
+GRACE_DB_URL = 'https://gracedb.ligo.org'
 
 
 # TODO: how will this jive with tom_scimma as a non-default?

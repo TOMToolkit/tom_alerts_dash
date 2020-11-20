@@ -15,8 +15,8 @@ DEFAULT_ALERT_CLASSES = [
 
 def get_service_classes():
     """
-    Gets the broker classes available to this TOM as specified by ``TOM_ALERTS_DASH_CLASSES`` in ``settings.py``. If
-    none are specified, returns the default set.
+    Gets the dash broker classes available to this TOM as specified by ``TOM_ALERTS_DASH_CLASSES`` in ``settings.py``.
+    If none are specified, returns the default set.
 
     :returns: dict of broker classes, with keys being the name of the broker and values being the broker class
     :rtype: dict
@@ -40,7 +40,7 @@ def get_service_classes():
 
 def get_service_class(name):
     """
-    Gets the specific broker class for a given broker name.
+    Gets the specific dash broker class for a given broker name.
 
     :returns: Broker class
     :rtype: class
@@ -57,15 +57,19 @@ def get_service_class(name):
 
 class GenericDashBroker(GenericBroker):
 
-    # TODO: finalize callback interface
+    @abstractmethod
+    def filter_callback(self, *args):
+        pass
+    
+    @abstractmethod
+    def get_callback_inputs(self):
+        pass
 
-    def filter_callback(self):
+    @abstractmethod
+    def get_dash_filters(self):
         pass
 
     def flatten_dash_alerts(self, alerts):
-        pass
-
-    def filter_alerts(self, filters):
         pass
 
     @abstractmethod
