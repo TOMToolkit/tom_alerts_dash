@@ -35,6 +35,8 @@ setup(
         'django-bootstrap4',
     ],
     extras_require={
+        'scimma': ['tom-scimma'],
+        'antares': ['tom-antares']
     },
     include_package_data=True,
 )

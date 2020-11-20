@@ -1,7 +1,7 @@
 import re
 
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, MATCH, Output, State
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
@@ -10,7 +10,7 @@ from django.conf import settings
 from django_plotly_dash import DjangoDash
 from django.shortcuts import reverse
 
-from tom_alerts.alerts import get_service_class, get_service_classes
+from tom_alerts_dash.alerts import get_service_class, get_service_classes
 
 
 app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOOTSTRAP], add_bootstrap_links=True)
@@ -33,6 +33,9 @@ class BrokerClient:
     @broker.setter
     def broker(self, new_broker_name):
         self._broker = get_service_class(new_broker_name)()
+
+    def get_filters(self):
+        return self._broker.get_dash_filters()
 
     def get_columns(self):
         return self._broker.get_dash_columns()
@@ -72,13 +75,13 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Filters go here
-            # dcc.Input(
-            #     id='name-search',
-            #     type='text',
-            #     placeholder='Alert name search',
-            #     debounce=True
-            # ),
-            id='alerts-table-filters-container'
+            dcc.Dropdown(
+                id={'type': 'broker-filter'},
+                options=[{'label': 'option1', 'value': 'Option 1'}],
+                placeholder='Object Name Search',
+            ),
+            # [broker_client.get_filters()],
+            id='alerts-table-filters-form'
         ),
         dhc.Div(  # Alerts datatable goes here
             dcc.Loading(children=[
@@ -129,14 +132,17 @@ app.layout = dbc.Container([
 @app.callback(
     [Output('alerts-table', 'columns'),
      Output('alerts-table', 'data'),
+     Output('alerts-table-filters-container', 'children'),
      Output('page-header', 'children')],
     [Input('broker-selection', 'value'),
      Input('alerts-table', 'filter_query'),
      Input('alerts-table', 'page_current'),
-     Input('alerts-table', 'page_size')]
+     Input('alerts-table', 'page_size'),
+     Input({'type': 'broker-filter', 'index': MATCH}, 'value')],
 )
-def alerts_table_filter(broker_selection, filter_query, page_current, page_size):
+def alerts_table_filter(broker_selection, filter_query, page_current, page_size, broker_filters):
     print(filter_query)
+    print(broker_filters)
     if broker_selection and broker_selection != broker_client.broker:
         print(broker_selection)
         broker_client.broker = broker_selection
@@ -150,7 +156,9 @@ def alerts_table_filter(broker_selection, filter_query, page_current, page_size)
             parameters[col_name] = {'operator': operator, 'value': filter_value}
     print(f'parameters: {parameters}')
 
-    return broker_client.get_columns(), broker_client.get_alerts(parameters), dhc.H3(f'{broker_client._broker.name} Alerts')
+    print(broker_client.get_filters())
+
+    return broker_client.get_columns(), broker_client.get_alerts(parameters), broker_client.get_filters(), dhc.H3(f'{broker_client._broker.name} Alerts')
 
 
 @app.callback(
