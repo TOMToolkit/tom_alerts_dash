@@ -10,6 +10,16 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
+    def filter_callback(self, rb_min):
+        print('test filter')
+        # return self.get_dash_data({})
+        return []
+
+    def get_callback_header(self):
+        outputs = Output('alerts-table', 'data')
+        inputs = [Input('rb-min', 'value')]
+        return outputs, inputs
+
     def get_dash_filters(self):
         form = dbc.Row([
             dbc.Col(dcc.Input(
@@ -25,6 +35,7 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
                 debounce=True
             ))
         ])
+        return form
 
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []

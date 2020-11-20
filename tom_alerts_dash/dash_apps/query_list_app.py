@@ -34,6 +34,17 @@ class BrokerClient:
     def broker(self, new_broker_name):
         self._broker = get_service_class(new_broker_name)()
 
+    def get_callback_inputs(self):
+        print(self._broker.get_callback_header()[1])
+        return self._broker.get_callback_header()[1]
+
+    def get_callback_outputs(self):
+        print(self._broker.get_callback_header()[0])
+        return self._broker.get_callback_header()[0]
+
+    def get_filter_callback(self):
+        return self._broker.filter_callback
+
     def get_filters(self):
         return self._broker.get_dash_filters()
 
@@ -75,11 +86,8 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Filters go here
-            dhc.Form(
                 [broker_client.get_filters()],
-                id='alerts-table-filters-form',
-                action='/post', method='post'
-            )
+                id='alerts-table-filters-container',
         ),
         dhc.Div(  # Alerts datatable goes here
             dcc.Loading(children=[
@@ -126,41 +134,47 @@ app.layout = dbc.Container([
     ])
 ])
 
+# app.callback(
+    # Output(generate_output_id(value1, value2), 'children'),
+    # [Input(generate_control_id(value1), 'value'),
+    #  Input(generate_control_id(value2), 'value')])(
+    # generate_output_callback(value1, value2)
+# )
+
+app.callback(
+    broker_client.get_callback_outputs(), broker_client.get_callback_inputs()
+)(broker_client._broker.filter_callback)
 
 @app.callback(
     [Output('alerts-table', 'columns'),
-     Output('alerts-table', 'data'),
-     Output('alerts-table-filters-container', 'children'),
      Output('page-header', 'children')],
-    [Input('broker-selection', 'value'),
-     Input('alerts-table', 'filter_query'),
-     Input('alerts-table', 'page_current'),
-     Input('alerts-table', 'page_size'),
-     Input('alerts-table-filters-form', 'data')],
+    [Input('broker-selection', 'value')],
 )
-def alerts_table_filter(broker_selection, filter_query, page_current, page_size, broker_filters):
-    print(filter_query)
-    print(broker_filters)
+def alerts_table_filter(broker_selection):
+    for callback in app._callback_sets:
+        print(f'callback: {callback}')
     if broker_selection and broker_selection != broker_client.broker:
         print(broker_selection)
         broker_client.broker = broker_selection
         page_current = 0
+    if broker_selection == 'MARS':
+        print(broker_selection)
+        app.callback(broker_client.get_callback_outputs(), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
 
     # TODO: Add example filter queries
-    parameters = {'page_num': page_current, 'page_size': page_size}
-    if filter_query:
-        for filter_part in filter_query.split(' && '):
-            col_name, operator, filter_value = filter_part.split(' ', 2)
-            col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
-            parameters[col_name] = {'operator': operator, 'value': filter_value}
-    print(f'parameters: {parameters}')
+    # parameters = {'page_num': page_current, 'page_size': page_size}
+    # if filter_query:
+    #     for filter_part in filter_query.split(' && '):
+    #         col_name, operator, filter_value = filter_part.split(' ', 2)
+    #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
+    #         parameters[col_name] = {'operator': operator, 'value': filter_value}
+    # print(f'parameters: {parameters}')
 
     # NOTE: do this for the other two return values
     columns = broker_client.get_columns()
+    page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
 
-    print(broker_client.get_filters())
-
-    return columns, broker_client.get_alerts(parameters), broker_client.get_filters(), dhc.H3(f'{broker_client._broker.name} Alerts')
+    return columns, page_header
 
 
 @app.callback(
@@ -182,3 +196,6 @@ def create_targets(selected_rows, row_data, create_targets):
     
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
+
+for callback in app._callback_sets:
+    print(f'callback: {callback}')

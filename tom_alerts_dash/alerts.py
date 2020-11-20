@@ -58,6 +58,9 @@ def get_service_class(name):
 
 class GenericDashBroker(GenericBroker):
 
+    def filter_callback(self):
+        pass
+
     def flatten_dash_alerts(self, alerts):
         pass
 

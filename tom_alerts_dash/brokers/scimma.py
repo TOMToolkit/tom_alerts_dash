@@ -11,7 +11,8 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []
         for alert in alerts:
-            url = f'{GRACE_DB_URL}/superevents/{alert["message"]["event_trig_num"]}/view/'
+            # url = f'{GRACE_DB_URL}/superevents/{alert["message"]["event_trig_num"]}/view/'
+            url = ''
             flattened_alerts.append({
                 'alert_identifier': f'[{alert["alert_identifier"]}]({url})',
                 'counterpart_identifier': alert['extracted_fields']['counterpart_identifier'],
