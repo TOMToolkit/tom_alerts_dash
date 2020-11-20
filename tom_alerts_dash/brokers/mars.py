@@ -1,3 +1,4 @@
+from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 
@@ -10,26 +11,20 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
     def get_dash_filters(self):
-        return dcc.Input(
-                id={'type': 'broker-filter'},
+        form = dbc.Row([
+            dbc.Col(dcc.Input(
+                id='objname-search',
                 type='text',
                 placeholder='Object Name Search',
                 debounce=True
-            )
-        # return dbc.Row([
-        #     dbc.Col(dcc.Input(
-        #         id={'type': 'broker-filter'},
-        #         type='text',
-        #         placeholder='Object Name Search',
-        #         debounce=True
-        #     )),
-        #     dbc.Col(dcc.Input(
-        #         id={'type': 'broker-filter'},
-        #         type='number',
-        #         placeholder='Real-Bogus Minimum',
-        #         debounce=True
-        #     ))
-        # ])
+            )),
+            dbc.Col(dcc.Input(
+                id='rb-min',
+                type='number',
+                placeholder='Real-Bogus Minimum',
+                debounce=True
+            ))
+        ])
 
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []

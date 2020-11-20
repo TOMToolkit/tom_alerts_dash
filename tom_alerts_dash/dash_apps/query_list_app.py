@@ -1,7 +1,7 @@
 import re
 
 import dash
-from dash.dependencies import Input, MATCH, Output, State
+from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
@@ -75,13 +75,11 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Filters go here
-            dcc.Dropdown(
-                id={'type': 'broker-filter'},
-                options=[{'label': 'option1', 'value': 'Option 1'}],
-                placeholder='Object Name Search',
-            ),
-            # [broker_client.get_filters()],
-            id='alerts-table-filters-form'
+            dhc.Form(
+                [broker_client.get_filters()],
+                id='alerts-table-filters-form',
+                action='/post', method='post'
+            )
         ),
         dhc.Div(  # Alerts datatable goes here
             dcc.Loading(children=[
@@ -138,7 +136,7 @@ app.layout = dbc.Container([
      Input('alerts-table', 'filter_query'),
      Input('alerts-table', 'page_current'),
      Input('alerts-table', 'page_size'),
-     Input({'type': 'broker-filter', 'index': MATCH}, 'value')],
+     Input('alerts-table-filters-form', 'data')],
 )
 def alerts_table_filter(broker_selection, filter_query, page_current, page_size, broker_filters):
     print(filter_query)
