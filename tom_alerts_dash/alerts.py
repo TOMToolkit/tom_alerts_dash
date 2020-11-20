@@ -13,11 +13,10 @@ DEFAULT_ALERT_CLASSES = [
 ]
 
 
-# TODO: should these be static methods in a class?
 def get_service_classes():
     """
-    Gets the broker classes available to this TOM as specified by ``TOM_ALERT_CLASSES`` in ``settings.py``. If none are
-    specified, returns the default set.
+    Gets the broker classes available to this TOM as specified by ``TOM_ALERTS_DASH_CLASSES`` in ``settings.py``. If
+    none are specified, returns the default set.
 
     :returns: dict of broker classes, with keys being the name of the broker and values being the broker class
     :rtype: dict
@@ -57,6 +56,8 @@ def get_service_class(name):
 
 
 class GenericDashBroker(GenericBroker):
+
+    # TODO: finalize callback interface
 
     def filter_callback(self):
         pass

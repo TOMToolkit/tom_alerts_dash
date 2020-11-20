@@ -1,6 +1,6 @@
 from tom_alerts_dash.alerts import GenericDashBroker
 from tom_common.templatetags.tom_common_extras import truncate_number
-from tom_scimma.scimma import SCIMMABroker
+from tom_scimma.scimma import SCIMMABroker, GRACE_DB_URL
 from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 
@@ -11,8 +11,7 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []
         for alert in alerts:
-            # url = f'{GRACE_DB_URL}/superevents/{alert["message"]["event_trig_num"]}/view/'
-            url = ''
+            url = f'{GRACE_DB_URL}/superevents/{alert["message"]["event_trig_num"]}/view/'
             flattened_alerts.append({
                 'alert_identifier': f'[{alert["alert_identifier"]}]({url})',
                 'counterpart_identifier': alert['extracted_fields']['counterpart_identifier'],

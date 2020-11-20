@@ -35,12 +35,10 @@ class BrokerClient:
         self._broker = get_service_class(new_broker_name)()
 
     def get_callback_inputs(self):
-        print(self._broker.get_callback_header()[1])
-        return self._broker.get_callback_header()[1]
+        return self._broker.get_callback_inputs()
 
-    def get_callback_outputs(self):
-        print(self._broker.get_callback_header()[0])
-        return self._broker.get_callback_header()[0]
+    def get_callback_output(self):
+        return self._broker.get_callback_output()
 
     def get_filter_callback(self):
         return self._broker.filter_callback
@@ -134,15 +132,9 @@ app.layout = dbc.Container([
     ])
 ])
 
-# app.callback(
-    # Output(generate_output_id(value1, value2), 'children'),
-    # [Input(generate_control_id(value1), 'value'),
-    #  Input(generate_control_id(value2), 'value')])(
-    # generate_output_callback(value1, value2)
-# )
-
+# Create the callback for the initial broker
 app.callback(
-    broker_client.get_callback_outputs(), broker_client.get_callback_inputs()
+    broker_client.get_callback_output(), broker_client.get_callback_inputs()
 )(broker_client._broker.filter_callback)
 
 @app.callback(
@@ -156,10 +148,9 @@ def alerts_table_filter(broker_selection):
     if broker_selection and broker_selection != broker_client.broker:
         print(broker_selection)
         broker_client.broker = broker_selection
+        # TODO: remove the old callback from app._callback_sets
+        app.callback(broker_client.get_callback_output(), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
         page_current = 0
-    if broker_selection == 'MARS':
-        print(broker_selection)
-        app.callback(broker_client.get_callback_outputs(), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
 
     # TODO: Add example filter queries
     # parameters = {'page_num': page_current, 'page_size': page_size}
@@ -170,7 +161,6 @@ def alerts_table_filter(broker_selection):
     #         parameters[col_name] = {'operator': operator, 'value': filter_value}
     # print(f'parameters: {parameters}')
 
-    # NOTE: do this for the other two return values
     columns = broker_client.get_columns()
     page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
 
