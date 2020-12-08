@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from importlib import import_module
 
+from dash.dependencies import Input, Output
 from django.conf import settings
 
 from tom_alerts.alerts import GenericBroker
@@ -9,7 +10,7 @@ from tom_alerts.alerts import GenericBroker
 DEFAULT_ALERT_CLASSES = [
     'tom_alerts_dash.brokers.mars.MARSDashBroker',
     'tom_alerts_dash.brokers.alerce.ALeRCEDashBroker',
-    'tom_alerts_dash.brokers.scimma.SCIMMADashBroker',
+    # 'tom_alerts_dash.brokers.scimma.SCIMMADashBroker',
 ]
 
 
@@ -56,14 +57,31 @@ def get_service_class(name):
 
 
 class GenericDashBroker(GenericBroker):
+    name = 'Generic Broker'
 
-    @abstractmethod
-    def filter_callback(self, *args):
-        pass
-    
-    @abstractmethod
+    def callback(self, broker_selection, broker_state):
+        return
+
+    # @abstractmethod
+    # def get_callback_inputs(self):
+    #     pass
+
     def get_callback_inputs(self):
-        pass
+        inputs = [
+            Input('alerts-table-filters-container', 'children')
+        ]
+        return inputs
+
+    def get_callback_outputs(self):
+        outputs = [
+            Output('alerts-table', 'columns'),
+            Output('alerts-table', 'data'),
+            Output('alerts-table-filters-container', 'children'),
+            Output('page-header', 'children'),
+            Output('broker-state', 'value')
+        ]
+
+        return outputs
 
     @abstractmethod
     def get_dash_filters(self):

@@ -13,7 +13,8 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
     # TODO: don't trigger callback unless all of ra/dec/cone are populated
-    def filter_callback(self, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
+    def callback(self, filters_container, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
+        # callback_return_values = super().callback(broker_selection)
         cone_search = ''
         if any([cone_ra, cone_dec, cone_radius]):
             if all([cone_ra, cone_dec, cone_radius]):
@@ -31,7 +32,8 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
 
 
     def get_callback_inputs(self):
-        inputs = [
+        inputs = super().get_callback_inputs()
+        inputs += [
             Input('objname-search', 'value'),
             Input('cone-ra', 'value'),
             Input('cone-dec', 'value'),

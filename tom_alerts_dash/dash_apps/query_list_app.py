@@ -1,7 +1,7 @@
 import re
 
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
@@ -38,7 +38,7 @@ class BrokerClient:
         return self._broker.get_callback_inputs()
 
     def get_filter_callback(self):
-        return self._broker.filter_callback
+        return self._broker.callback
 
     def get_filters(self):
         return self._broker.get_dash_filters()
@@ -48,6 +48,45 @@ class BrokerClient:
 
     def get_alerts(self, parameters):
         return self._broker.get_dash_data(parameters)
+
+    def create_table(self):
+        return DataTable(
+            id=f'alerts-table-{self.broker}',
+            columns=self.get_columns(),
+            data=self.get_alerts({}),
+            filter_action='custom',
+            row_selectable='multi',
+            page_current=0,
+            page_size=20,
+            page_action='custom',
+            css=[
+                {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+            ],
+            style_cell_conditional=[
+                {
+                    # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
+                }
+            ],
+            style_cell={
+                'textAlign': 'right'
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': 'rgb(233, 243, 256)'
+                },
+            ],
+            style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+            style_filter={
+                'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                'backgroundColor': 'rgb(256, 233, 233)'
+            },
+            style_header={
+                'backgroundColor': 'rgb(213, 223, 242)', 
+                'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                'fontWeight': 'bold'
+            },
+        )
 
 
 broker_client = BrokerClient('MARS')
@@ -62,7 +101,8 @@ app.layout = dbc.Container([
             dhc.H3(f'{broker_client._broker.name} Alerts'),
             id='page-header'
         ),
-        dhc.Div(
+        dhc.Div(children=[
+            dcc.Input(id='broker-state', type='hidden', value=''),
             dhc.P(
                 dcc.Dropdown(
                     id='broker-selection',
@@ -70,7 +110,7 @@ app.layout = dbc.Container([
                     options=[{'label': clazz, 'value': clazz} for clazz in get_service_classes().keys()]
                 )
             )
-        ),
+        ]),
         dhc.Div(
             dhc.P(
                 dbc.Button(
@@ -82,95 +122,77 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Filters go here
-                [broker_client.get_filters()],
-                id='alerts-table-filters-container',
+            [broker_client.get_filters()],
+            id='alerts-table-filters-container',
         ),
         dhc.Div(  # Alerts datatable goes here
             dcc.Loading(children=[
-                DataTable(
-                    id='alerts-table',
-                    columns=broker_client.get_columns(),
-                    data=broker_client.get_alerts({}),
-                    filter_action='custom',
-                    row_selectable='multi',
-                    page_current=0,
-                    page_size=20,
-                    page_action='custom',
-                    css=[
-                        {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
-                    ],
-                    style_cell_conditional=[
-                        {
-                            # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
-                        }
-                    ],
-                    style_cell={
-                        'textAlign': 'right'
-                    },
-                    style_data_conditional=[
-                        {
-                            'if': {'row_index': 'odd'},
-                            'backgroundColor': 'rgb(233, 243, 256)'
+                dhc.Div(
+                    DataTable(
+                        id='alerts-table',
+                        columns=broker_client.get_columns(),
+                        data=broker_client.get_alerts({}),
+                        filter_action='custom',
+                        row_selectable='multi',
+                        page_current=0,
+                        page_size=20,
+                        page_action='custom',
+                        css=[
+                            {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+                        ],
+                        style_cell_conditional=[
+                            {
+                                # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
+                            }
+                        ],
+                        style_cell={
+                            'textAlign': 'right'
                         },
-                    ],
-                    style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-                    style_filter={
-                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                        'backgroundColor': 'rgb(256, 233, 233)'
-                    },
-                    style_header={
-                        'backgroundColor': 'rgb(213, 223, 242)', 
-                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                        'fontWeight': 'bold'
-                    },
+                        style_data_conditional=[
+                            {
+                                'if': {'row_index': 'odd'},
+                                'backgroundColor': 'rgb(233, 243, 256)'
+                            },
+                        ],
+                        style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                        style_filter={
+                            'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                            'backgroundColor': 'rgb(256, 233, 233)'
+                        },
+                        style_header={
+                            'backgroundColor': 'rgb(213, 223, 242)', 
+                            'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                            'fontWeight': 'bold'
+                        },
+                    ), id='alerts-table-container'
                 )], type='dot', fullscreen=True
             ),
-            id='alerts-table-container'
+            id='alerts-table-loading-container'
         ),
     ])
 ])
 
-# Create the callback for the initial broker
-# TODO: default behavior on this table probably shouldn't be to load MARS alert, but rather prompt for
-# broker selection
-app.callback(
-    Output('alerts-table', 'data'), broker_client.get_callback_inputs()
-)(broker_client._broker.filter_callback)
+# @app.callback(
+#     [Output('alerts-table-filter-container', 'children'),
+#      Output('alerts-table', 'columns')],
+#     [Input('broker-selection', 'value')]
+# )
+# def broker_selection(broker_selection):
+#     if broker_selection.has_changed:
+#         app._callback_sets.pop()
+#         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
+#         return broker_client.get_filters(), broker_client.get_columns()
+
 
 # TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
 # dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
 # this is the only way to support different callbacks per broker.
-
-@app.callback(
-    [Output('alerts-table', 'columns'),
-     Output('page-header', 'children')],
-    [Input('broker-selection', 'value')],
-)
-def alerts_table_filter(broker_selection):
-
-    if broker_selection and broker_selection != broker_client.broker:
-        print(broker_selection)
-        broker_client.broker = broker_selection
-        # TODO: remove the old callback from app._callback_sets
-        app._callback_sets.pop(0)
-        app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
-        page_current = 0
-    for callback in app._callback_sets:
-        print(f'callback: {callback}')
-
-    # TODO: Add example filter queries
-    # parameters = {'page_num': page_current, 'page_size': page_size}
-    # if filter_query:
-    #     for filter_part in filter_query.split(' && '):
-    #         col_name, operator, filter_value = filter_part.split(' ', 2)
-    #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
-    #         parameters[col_name] = {'operator': operator, 'value': filter_value}
-    # print(f'parameters: {parameters}')
-
-    columns = broker_client.get_columns()
-    page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
-
-    return columns, page_header
+# for clazz in get_service_classes().keys():
+#     print(clazz)
+#     broker_client.broker = clazz
+#     app.callback(
+#         Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
+#     )(broker_client._broker.filter_callback)
 
 
 @app.callback(
@@ -193,4 +215,49 @@ def create_targets(selected_rows, row_data, create_targets):
             # add a link to go to the target list in the success message
     
         if successes:
-            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')            
+            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
+
+
+@app.callback(
+    [Output('alerts-table', 'columns'),
+     Output('alerts-table-filters-container', 'children'),
+     Output('page-header', 'children'),
+     Output('broker-state', 'value')],
+    [Input('broker-selection', 'value')],
+    [State('broker-state', 'value')]
+)
+def alerts_table_filter(broker_selection, broker_state):
+    print('here')
+    if broker_selection and broker_selection != broker_client.broker:
+        print(broker_selection)
+        broker_client.broker = broker_selection
+        # Remove the old callback from app._callback_sets and add the new one
+        app._callback_sets.pop()
+        app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
+        page_current = 0
+    for callback in app._callback_sets:
+        print(f'callback: {callback}')
+
+    # TODO: Add example filter queries
+    # parameters = {'page_num': page_current, 'page_size': page_size}
+    # if filter_query:
+    #     for filter_part in filter_query.split(' && '):
+    #         col_name, operator, filter_value = filter_part.split(' ', 2)
+    #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
+    #         parameters[col_name] = {'operator': operator, 'value': filter_value}
+    # print(f'parameters: {parameters}')
+
+    columns = broker_client.get_columns()
+    filters = broker_client.get_filters()
+    print(filters)
+    page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
+
+    return columns, filters, page_header, broker_client.broker
+
+
+# Create the callback for the initial broker
+# TODO: default behavior on this table probably shouldn't be to load MARS alert, but rather prompt for
+# broker selection
+# app.callback(
+#     Output('alerts-table', 'data'), broker_client.get_callback_inputs()
+# )(broker_client._broker.callback)

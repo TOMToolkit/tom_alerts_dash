@@ -1,6 +1,7 @@
 from astropy.time import Time, TimezoneInfo
 from dash.dependencies import Input
 import dash_bootstrap_components as dbc
+import dash_core_components as dcc
 import dash_html_components as dhc
 
 from tom_alerts_dash.alerts import GenericDashBroker
@@ -11,7 +12,7 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
-    def filter_callback(self, classearly, button_click):
+    def callback(self, filters_container, classearly, button_click):
         # if not button_click:
         #     raise PreventUpdate
         
@@ -21,11 +22,13 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         })
 
     def get_callback_inputs(self):
-        inputs = [
+        inputs = super().get_callback_inputs()
+        inputs += [
             # Input('oid', 'value'),
             Input('classearly', 'value'),
             Input('trigger-filter-btn', 'n_clicks_timestamp')
         ]
+        return inputs
 
     def get_dash_filters(self):
         filters = dhc.Div([
@@ -40,8 +43,7 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                     id='classearly',
                     options=[{'label': classifier[1], 'value': classifier[0]}
                              for classifier in ALeRCEQueryForm.early_classifier_choices()
-                             if classifier[0] is not None],
-                    debounce=True
+                             if classifier[0] is not None]
                 ),
                 dbc.Button(
                     'Filter', 
@@ -51,6 +53,7 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                 ),
             ])
         ])
+        return filters
 
     def flatten_dash_alerts(self, alerts):
         flattened_alerts = []
