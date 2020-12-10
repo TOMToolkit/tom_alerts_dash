@@ -13,12 +13,11 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
-    def callback(self, broker_state, classearly, button_click):
+    def callback(self, classearly, button_click):
         if not button_click:
             raise PreventUpdate
         
         print('filter classback')
-        print(broker_state)
         return self._request_alerts({
             'classearly': classearly
         })

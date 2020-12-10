@@ -68,7 +68,6 @@ class GenericDashBroker(GenericBroker):
 
     def get_callback_inputs(self):
         inputs = [
-            Input('alerts-table-filters-container', 'children')
         ]
         return inputs
 

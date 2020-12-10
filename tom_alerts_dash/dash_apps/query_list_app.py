@@ -53,48 +53,51 @@ class BrokerClient:
     @staticmethod
     def create_table(broker):
         print('create table')
-        return dhc.Div(children=[
-            dhc.Div(
-                get_service_class(broker)().get_dash_filters()
-            ),
-            DataTable(
-                id=f'alerts-table-{broker}',
-                columns=get_service_class(broker)().get_dash_columns(),
-                data=[],
-                filter_action='custom',
-                row_selectable='multi',
-                page_current=0,
-                page_size=20,
-                page_action='custom',
-                css=[
-                    {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
-                ],
-                style_cell_conditional=[
-                    {
-                        # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
-                    }
-                ],
-                style_cell={
-                    'textAlign': 'right'
-                },
-                style_data_conditional=[
-                    {
-                        'if': {'row_index': 'odd'},
-                        'backgroundColor': 'rgb(233, 243, 256)'
+        return dhc.Div(
+            dcc.Loading(children=[
+                dhc.Div(
+                    get_service_class(broker)().get_dash_filters()
+                ),
+                DataTable(
+                    id=f'alerts-table-{broker}',
+                    columns=get_service_class(broker)().get_dash_columns(),
+                    data=[],
+                    filter_action='custom',
+                    row_selectable='multi',
+                    page_current=0,
+                    page_size=20,
+                    page_action='custom',
+                    css=[
+                        {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+                    ],
+                    style_cell_conditional=[
+                        {
+                            # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
+                        }
+                    ],
+                    style_cell={
+                        'textAlign': 'right'
                     },
-                ],
-                style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-                style_filter={
-                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                    'backgroundColor': 'rgb(256, 233, 233)'
-                },
-                style_header={
-                    'backgroundColor': 'rgb(213, 223, 242)', 
-                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                    'fontWeight': 'bold'
-                }
-            )
-        ], id=f'alerts-container-{broker}', style={'display': 'none'})
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'},
+                            'backgroundColor': 'rgb(233, 243, 256)'
+                        },
+                    ],
+                    style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                    style_filter={
+                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                        'backgroundColor': 'rgb(256, 233, 233)'
+                    },
+                    style_header={
+                        'backgroundColor': 'rgb(213, 223, 242)', 
+                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                        'fontWeight': 'bold'
+                    }
+                )
+            ], id=f'alerts-loading-container-{broker}'),
+            id=f'alerts-container-{broker}', style={'display': 'none'}
+        )
 
 
 broker_client = BrokerClient('MARS')
@@ -130,48 +133,7 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Alerts datatable goes here
-            dcc.Loading(children=[
-                dhc.Div(
-                    DataTable(
-                        id='alerts-table',
-                        columns=broker_client.get_columns(),
-                        data=broker_client.get_alerts({}),
-                        filter_action='custom',
-                        row_selectable='multi',
-                        page_current=0,
-                        page_size=20,
-                        page_action='custom',
-                        css=[
-                            {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
-                        ],
-                        style_cell_conditional=[
-                            {
-                                # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
-                            }
-                        ],
-                        style_cell={
-                            'textAlign': 'right'
-                        },
-                        style_data_conditional=[
-                            {
-                                'if': {'row_index': 'odd'},
-                                'backgroundColor': 'rgb(233, 243, 256)'
-                            },
-                        ],
-                        style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-                        style_filter={
-                            'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                            'backgroundColor': 'rgb(256, 233, 233)'
-                        },
-                        style_header={
-                            'backgroundColor': 'rgb(213, 223, 242)', 
-                            'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                            'fontWeight': 'bold'
-                        },
-                    ), id='alerts-table-container'
-                )], type='dot', fullscreen=True
-            ),
-            id='alerts-table-loading-container'
+            children=[broker_client.create_table(clazz) for clazz in get_service_classes().keys()],
         ),
     ])
 ])
@@ -231,69 +193,76 @@ app.callback(
 # this is the only way to support different callbacks per broker.
 for clazz in get_service_classes().keys():
     broker_client.broker = clazz
-    app.callback(
+    app_callback = app.callback(
         Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
-    )(get_service_class(clazz)().callback)
+    )
+    app_callback(get_service_class(clazz)().callback)
 
 
-@app.callback(
-    Output('redirection', 'children'),
-    [Input('alerts-table', 'derived_virtual_selected_rows'),
-     Input('alerts-table', 'derived_virtual_data'),
-     Input('create-targets-btn', 'n_clicks_timestamp')]
-)
-def create_targets(selected_rows, row_data, create_targets):
-    if create_targets:
-        errors = []
-        successes = []
-        for row in selected_rows:
-            target = broker_client._broker.to_target(row_data[row]['alert'])
-            if target:
-                successes.append(target.name)  # TODO: How to indicate successes?
-            else:
-                errors.append(target.name)  # TODO: How to handle errors?
-            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
-            # add a link to go to the target list in the success message
+# @app.callback(
+#     Output('redirection', 'children'),
+#     [Input(f'alerts-table-{broker}', 'derived_virtual_selection_rows') for clazz in get_service_classes().keys()]
+# )
+# def create_targets(*args)
+
+# @app.callback(
+#     Output('redirection', 'children'),
+#     [Input('alerts-table', 'derived_virtual_selected_rows'),
+#      Input('alerts-table', 'derived_virtual_data'),
+#      Input('create-targets-btn', 'n_clicks_timestamp')]
+# )
+# def create_targets(selected_rows, row_data, create_targets):
+#     if create_targets:
+#         errors = []
+#         successes = []
+#         for row in selected_rows:
+#             target = broker_client._broker.to_target(row_data[row]['alert'])
+#             if target:
+#                 successes.append(target.name)  # TODO: How to indicate successes?
+#             else:
+#                 errors.append(target.name)  # TODO: How to handle errors?
+#             # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
+#             # add a link to go to the target list in the success message
     
-        if successes:
-            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
+#         if successes:
+#             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
 
 
-@app.callback(
-    [Output('alerts-table', 'columns'),
-     Output('alerts-table-filters-container', 'children'),
-     Output('page-header', 'children'),
-     Output('broker-state', 'value')],
-    [Input('broker-selection', 'value')],
-    [State('broker-state', 'value')]
-)
-def alerts_table_filter(broker_selection, broker_state):
-    print('here')
-    if broker_selection and broker_selection != broker_client.broker:
-        print(broker_selection)
-        broker_client.broker = broker_selection
-        # Remove the old callback from app._callback_sets and add the new one
-        app._callback_sets.pop()
-        app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
-        page_current = 0
-    for callback in app._callback_sets:
-        print(f'callback: {callback}')
+# @app.callback(
+#     [Output('alerts-table', 'columns'),
+#      Output('alerts-table-filters-container', 'children'),
+#      Output('page-header', 'children'),
+#      Output('broker-state', 'value')],
+#     [Input('broker-selection', 'value')],
+#     [State('broker-state', 'value')]
+# )
+# def alerts_table_filter(broker_selection, broker_state):
+#     print('here')
+#     if broker_selection and broker_selection != broker_client.broker:
+#         print(broker_selection)
+#         broker_client.broker = broker_selection
+#         # Remove the old callback from app._callback_sets and add the new one
+#         app._callback_sets.pop()
+#         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
+#         page_current = 0
+#     for callback in app._callback_sets:
+#         print(f'callback: {callback}')
 
-    # TODO: Add example filter queries
-    # parameters = {'page_num': page_current, 'page_size': page_size}
-    # if filter_query:
-    #     for filter_part in filter_query.split(' && '):
-    #         col_name, operator, filter_value = filter_part.split(' ', 2)
-    #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
-    #         parameters[col_name] = {'operator': operator, 'value': filter_value}
-    # print(f'parameters: {parameters}')
+#     # TODO: Add example filter queries
+#     # parameters = {'page_num': page_current, 'page_size': page_size}
+#     # if filter_query:
+#     #     for filter_part in filter_query.split(' && '):
+#     #         col_name, operator, filter_value = filter_part.split(' ', 2)
+#     #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
+#     #         parameters[col_name] = {'operator': operator, 'value': filter_value}
+#     # print(f'parameters: {parameters}')
 
-    columns = broker_client.get_columns()
-    filters = broker_client.get_filters()
-    print(filters)
-    page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
+#     columns = broker_client.get_columns()
+#     filters = broker_client.get_filters()
+#     print(filters)
+#     page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
 
-    return columns, filters, page_header, broker_client.broker
+#     return columns, filters, page_header, broker_client.broker
 
 
 # Create the callback for the initial broker
