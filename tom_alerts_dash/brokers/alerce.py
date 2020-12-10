@@ -1,5 +1,6 @@
 from astropy.time import Time, TimezoneInfo
 from dash.dependencies import Input
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
@@ -12,11 +13,12 @@ from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
-    def callback(self, filters_container, classearly, button_click):
-        # if not button_click:
-        #     raise PreventUpdate
+    def callback(self, broker_state, classearly, button_click):
+        if not button_click:
+            raise PreventUpdate
         
         print('filter classback')
+        print(broker_state)
         return self._request_alerts({
             'classearly': classearly
         })

@@ -2,6 +2,7 @@ import re
 
 import dash
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
@@ -49,44 +50,51 @@ class BrokerClient:
     def get_alerts(self, parameters):
         return self._broker.get_dash_data(parameters)
 
-    def create_table(self):
-        return DataTable(
-            id=f'alerts-table-{self.broker}',
-            columns=self.get_columns(),
-            data=self.get_alerts({}),
-            filter_action='custom',
-            row_selectable='multi',
-            page_current=0,
-            page_size=20,
-            page_action='custom',
-            css=[
-                {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
-            ],
-            style_cell_conditional=[
-                {
-                    # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
-                }
-            ],
-            style_cell={
-                'textAlign': 'right'
-            },
-            style_data_conditional=[
-                {
-                    'if': {'row_index': 'odd'},
-                    'backgroundColor': 'rgb(233, 243, 256)'
+    @staticmethod
+    def create_table(broker):
+        print('create table')
+        return dhc.Div(children=[
+            dhc.Div(
+                get_service_class(broker)().get_dash_filters()
+            ),
+            DataTable(
+                id=f'alerts-table-{broker}',
+                columns=get_service_class(broker)().get_dash_columns(),
+                data=[],
+                filter_action='custom',
+                row_selectable='multi',
+                page_current=0,
+                page_size=20,
+                page_action='custom',
+                css=[
+                    {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+                ],
+                style_cell_conditional=[
+                    {
+                        # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
+                    }
+                ],
+                style_cell={
+                    'textAlign': 'right'
                 },
-            ],
-            style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-            style_filter={
-                'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                'backgroundColor': 'rgb(256, 233, 233)'
-            },
-            style_header={
-                'backgroundColor': 'rgb(213, 223, 242)', 
-                'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                'fontWeight': 'bold'
-            },
-        )
+                style_data_conditional=[
+                    {
+                        'if': {'row_index': 'odd'},
+                        'backgroundColor': 'rgb(233, 243, 256)'
+                    },
+                ],
+                style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                style_filter={
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'backgroundColor': 'rgb(256, 233, 233)'
+                },
+                style_header={
+                    'backgroundColor': 'rgb(213, 223, 242)', 
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'fontWeight': 'bold'
+                }
+            )
+        ], id=f'alerts-container-{broker}', style={'display': 'none'})
 
 
 broker_client = BrokerClient('MARS')
@@ -120,10 +128,6 @@ app.layout = dbc.Container([
                     color='info'
                 ),
             )
-        ),
-        dhc.Div(  # Filters go here
-            [broker_client.get_filters()],
-            id='alerts-table-filters-container',
         ),
         dhc.Div(  # Alerts datatable goes here
             dcc.Loading(children=[
@@ -184,15 +188,52 @@ app.layout = dbc.Container([
 #         return broker_client.get_filters(), broker_client.get_columns()
 
 
+# NOTE: hidden datatables/input containers should be created for each broker, along with corresponding callbacks, on init
+# NOTE: change in broker selection should hide current datatable and show the new datatable, and update the broker-state value
+def broker_selection_callback(broker_selection, broker_state):
+    print(broker_selection, broker_state)
+    callback_return_values = ()
+    if broker_selection and broker_selection != broker_state:
+        callback_return_values += (broker_selection,)
+        for clazz in get_service_classes().keys():
+            if broker_selection == clazz:
+                callback_return_values += ({'display': 'block'},)
+            else:
+                callback_return_values += ({'display': 'none'},)
+        print(callback_return_values)
+        return callback_return_values
+    else:
+        raise PreventUpdate
+
+
+app.callback(
+    [Output('broker-state', 'value')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
+    [Input('broker-selection', 'value')],
+    [State('broker-state', 'value')]
+)(broker_selection_callback)
+
+
+# @app.callback(
+#     [Output('broker-state', 'value')],
+#     [Input('broker-selection', 'value')],
+#     [State('broker-state', 'value')]
+# )
+# def broker_selection(broker_selection, broker_state):
+#     print(broker_selection, broker_state)
+#     if broker_selection:
+#         return broker_selection
+#     else:
+#         return ''
+
+
 # TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
 # dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
 # this is the only way to support different callbacks per broker.
-# for clazz in get_service_classes().keys():
-#     print(clazz)
-#     broker_client.broker = clazz
-#     app.callback(
-#         Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
-#     )(broker_client._broker.filter_callback)
+for clazz in get_service_classes().keys():
+    broker_client.broker = clazz
+    app.callback(
+        Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
+    )(get_service_class(clazz)().callback)
 
 
 @app.callback(
