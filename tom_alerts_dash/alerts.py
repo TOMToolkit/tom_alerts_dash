@@ -10,25 +10,25 @@ from tom_alerts.alerts import GenericBroker
 DEFAULT_ALERT_CLASSES = [
     'tom_alerts_dash.brokers.mars.MARSDashBroker',
     'tom_alerts_dash.brokers.alerce.ALeRCEDashBroker',
-    # 'tom_alerts_dash.brokers.scimma.SCIMMADashBroker',
+    'tom_alerts_dash.brokers.scimma.SCIMMADashBroker',
 ]
 
 
 def get_service_classes():
     """
-    Gets the dash broker classes available to this TOM as specified by ``TOM_ALERTS_DASH_CLASSES`` in ``settings.py``.
+    Gets the dash broker classes available to this TOM as specified by ``TOM_ALERT_DASH_CLASSES`` in ``settings.py``.
     If none are specified, returns the default set.
 
     :returns: dict of broker classes, with keys being the name of the broker and values being the broker class
     :rtype: dict
     """
     try:
-        TOM_ALERTS_DASH_CLASSES = settings.TOM_ALERTS_DASH_CLASSES
+        TOM_ALERT_DASH_CLASSES = settings.TOM_ALERT_DASH_CLASSES
     except AttributeError:
-        TOM_ALERTS_DASH_CLASSES = DEFAULT_ALERT_CLASSES
+        TOM_ALERT_DASH_CLASSES = DEFAULT_ALERT_CLASSES
 
     service_choices = {}
-    for service in TOM_ALERTS_DASH_CLASSES:
+    for service in TOM_ALERT_DASH_CLASSES:
         mod_name, class_name = service.rsplit('.', 1)
         try:
             mod = import_module(mod_name)
