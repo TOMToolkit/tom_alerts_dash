@@ -17,90 +17,53 @@ from tom_alerts_dash.alerts import get_service_class, get_service_classes
 app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOOTSTRAP], add_bootstrap_links=True)
 
 
-class BrokerClient:
-    _broker = None
-
-    def __init__(self, broker_name, *args, **kwargs):
-        self._broker = get_service_class(broker_name)()
-
-    @property
-    def broker(self):
-        return self._broker
-
-    @broker.getter
-    def broker(self):
-        return self._broker.name
-
-    @broker.setter
-    def broker(self, new_broker_name):
-        self._broker = get_service_class(new_broker_name)()
-
-    def get_callback_inputs(self):
-        return self._broker.get_callback_inputs()
-
-    def get_filter_callback(self):
-        return self._broker.callback
-
-    def get_filters(self):
-        return self._broker.get_dash_filters()
-
-    def get_columns(self):
-        return self._broker.get_dash_columns()
-
-    def get_alerts(self, parameters):
-        return self._broker.get_dash_data(parameters)
-
-    @staticmethod
-    def create_table(broker):
-        print('create table')
-        return dhc.Div(
-            dcc.Loading(children=[
-                dhc.Div(
-                    get_service_class(broker)().get_dash_filters()
-                ),
-                DataTable(
-                    id=f'alerts-table-{broker}',
-                    columns=get_service_class(broker)().get_dash_columns(),
-                    data=[],
-                    filter_action='custom',
-                    row_selectable='multi',
-                    page_current=0,
-                    page_size=20,
-                    page_action='custom',
-                    css=[
-                        {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
-                    ],
-                    style_cell_conditional=[
-                        {
-                            # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
-                        }
-                    ],
-                    style_cell={
-                        'textAlign': 'right'
-                    },
-                    style_data_conditional=[
-                        {
-                            'if': {'row_index': 'odd'},
-                            'backgroundColor': 'rgb(233, 243, 256)'
-                        },
-                    ],
-                    style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
-                    style_filter={
-                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                        'backgroundColor': 'rgb(256, 233, 233)'
-                    },
-                    style_header={
-                        'backgroundColor': 'rgb(213, 223, 242)', 
-                        'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
-                        'fontWeight': 'bold'
+def create_datatable(broker):
+    print('create table')
+    return dhc.Div(
+        dcc.Loading(children=[
+            dhc.Div(
+                get_service_class(broker)().get_dash_filters()
+            ),
+            DataTable(
+                id=f'alerts-table-{broker}',
+                columns=get_service_class(broker)().get_dash_columns(),
+                data=[],
+                filter_action='custom',
+                row_selectable='multi',
+                page_current=0,
+                page_size=20,
+                page_action='custom',
+                css=[
+                    {'selector': '.dash-cell-value', 'rule': 'backgroundColor: blue;'}
+                ],
+                style_cell_conditional=[
+                    {
+                        # 'if': {'column_id': 'objectId'}, 'backgroundColor': 'blue'
                     }
-                )
-            ], id=f'alerts-loading-container-{broker}'),
-            id=f'alerts-container-{broker}', style={'display': 'none'}
-        )
-
-
-broker_client = BrokerClient('MARS')
+                ],
+                style_cell={
+                    'textAlign': 'right'
+                },
+                style_data_conditional=[
+                    {
+                        'if': {'row_index': 'odd'},
+                        'backgroundColor': 'rgb(233, 243, 256)'
+                    },
+                ],
+                style_data={'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif'},
+                style_filter={
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'backgroundColor': 'rgb(256, 233, 233)'
+                },
+                style_header={
+                    'backgroundColor': 'rgb(213, 223, 242)', 
+                    'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
+                    'fontWeight': 'bold'
+                }
+            )
+        ], id=f'alerts-loading-container-{broker}'),
+        id=f'alerts-container-{broker}', style={'display': 'none'}
+    )
 
 
 app.layout = dbc.Container([
@@ -133,7 +96,7 @@ app.layout = dbc.Container([
             )
         ),
         dhc.Div(  # Alerts datatable goes here
-            children=[broker_client.create_table(clazz) for clazz in get_service_classes().keys()],
+            children=[create_datatable(class_name) for class_name in get_service_classes().keys()],
         ),
     ])
 ])
