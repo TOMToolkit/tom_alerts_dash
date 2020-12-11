@@ -52,7 +52,6 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         ]
         return inputs
 
-    # TODO: make this look less ugly
     def get_dash_filters(self):
         filters = dhc.Div([
             dbc.Row([
@@ -61,40 +60,40 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
                     type='text',
                     placeholder='Object Name Search',
                     debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='magpsf-min',
                     type='number',
                     placeholder='Magnitude Minimum',
                     debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='rb-min',
                     type='number',
                     placeholder='Real-Bogus Minimum',
                     debounce=True
-                ))
-            ]),
+                ), width=3)
+            ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
                 dbc.Col(dcc.Input(
                     id='cone-ra',
                     type='text',
                     placeholder='Right Ascension',
                     debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='cone-dec',
                     type='text',
                     placeholder='Declination',
                     debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='cone-radius',
                     type='text',
                     placeholder='Radius',
                     debounce=True
-                ))
-            ])
+                ), width=3)
+            ], style={'padding-bottom': '10px'}, justify='start')
         ])
         return filters
 
@@ -120,21 +119,3 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
                 'alert': alert
             })
         return flattened_alerts
-
-    # def filter_alerts(self, filters):
-    #     parameters = {}
-    #     parameters['page'] = filters.get('page_num', 0) + 1  # Dash pages are 0-indexed, MARS is 1-indexed
-    #     filter_mapping = {'>': 'gt', '>=': 'gt', '<': 'lt', '<=': 'lt'}
-    #     parameters['objectId'] = filters.get('objectId', {}).get('value')
-    #     for key in ['ra', 'dec', 'magpsf']:
-    #         if key in filters:
-    #             filter_expression = filter_mapping[filters[key]['operator']]
-    #             parameters[f'{key}__{filter_expression}'] = filters[key]['value']
-    #     parameters['rb__gte'] = filters.get('rb', '')
-
-    #     alerts = self.fetch_alerts(parameters)  # TODO: this returns an iterator--how to find number of pages?
-    #     return alerts
-
-    def get_dash_data(self, filters):
-        alerts = self._request_alerts(filters)['results']
-        return self.flatten_dash_alerts(alerts)

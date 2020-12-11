@@ -16,11 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
+    dash_button_clicks = 0
 
-    def callback(self, oid, classearly, ra, dec, sr, button_click):
+    def callback(self, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr, button_click):
         logger.info('Entering ALeRCE callback...')
-        if not button_click:
+        if not button_click or button_click == self.btn_clicks:
             raise PreventUpdate
+        else:
+            self.dash_button_clicks = button_click
 
         form = ALeRCEQueryForm({
             'query_name': 'ALeRCE Dash Query',
@@ -41,57 +44,77 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         inputs += [
             Input('oid', 'value'),
             Input('classearly', 'value'),
+            Input('pclassearly', 'value'),
+            Input('classrf', 'value'),
+            Input('pclassrf', 'value'),
             Input('ra', 'value'),
             Input('dec', 'value'),
             Input('sr', 'value'),
-            Input('trigger-filter-btn', 'n_clicks_timestamp')
+            Input('trigger-filter-btn', 'n_clicks')
         ]
         return inputs
 
     def get_dash_filters(self):
         filters = dhc.Div([
             dbc.Row([
-                dcc.Input(
+                dbc.Col(dcc.Input(
                     id='oid',
                     type='text',
                     placeholder='Object ID',
                     debounce=True
-                ),
-                dcc.Dropdown(
+                )),
+            ], style={'padding-bottom': '10px'}),
+            dbc.Row([
+                dbc.Col(dcc.Dropdown(
                     id='classearly',
+                    placeholder='Early Classifier',
                     options=[{'label': classifier[1], 'value': classifier[0]}
                              for classifier in ALeRCEQueryForm.early_classifier_choices()
                              if classifier[0] is not None]
-                ),
-            ]),
+                )),
+                dbc.Col(dcc.Input(
+                    id='pclassearly',
+                    type='number',
+                    placeholder='Early Classifier Probability',
+                )),
+                dbc.Col(dcc.Dropdown(
+                    id='classrf',
+                    placeholder='Late Classifier',
+                    options=[{'label': classifier[1], 'value': classifier[0]}
+                             for classifier in ALeRCEQueryForm.late_classifier_choices()
+                             if classifier[0] is not None]
+                )),
+                dbc.Col(dcc.Input(
+                    id='pclassrf',
+                    type='number',
+                    placeholder='Late Classifier Probability',
+                )),
+            ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
                 dbc.Col(dcc.Input(
                     id='ra',
                     type='text',
                     placeholder='Right Ascension',
-                    debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='dec',
                     type='text',
                     placeholder='Declination',
-                    debounce=True
-                )),
+                ), width=3),
                 dbc.Col(dcc.Input(
                     id='sr',
                     type='text',
                     placeholder='Search Radius',
-                    debounce=True
-                ))
-            ]),
+                ), width=3)
+            ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
-                dbc.Button(
+                dbc.Col(dbc.Button(
                     'Filter', 
                     id='trigger-filter-btn',
                     outline=True,
                     color='info'
-                ),
-            ])
+                )),
+            ], style={'padding-bottom': '10px'})
         ])
         return filters
 
@@ -131,7 +154,3 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             {'id': 'classifier_type', 'name': 'Classifier Type', 'type': 'text'},
             {'id': 'classifier_probability', 'name': 'Classifier Probability', 'type': 'text'},
         ]
-
-    # def get_dash_data(self, filters):
-    #     alerts = self.filter_alerts(filters)
-    #     return self.flatten_dash_alerts(alerts)

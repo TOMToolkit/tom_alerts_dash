@@ -56,43 +56,23 @@ def get_service_class(name):
         )
 
 
+# TODO: Finalize interface and document
 class GenericDashBroker(GenericBroker):
     name = 'Generic Broker'
 
-    def callback(self, broker_selection, broker_state):
+    def callback(self):
         return
 
-    # @abstractmethod
-    # def get_callback_inputs(self):
-    #     pass
-
     def get_callback_inputs(self):
-        inputs = [
-        ]
-        return inputs
-
-    def get_callback_outputs(self):
-        outputs = [
-            Output('alerts-table', 'columns'),
-            Output('alerts-table', 'data'),
-            Output('alerts-table-filters-container', 'children'),
-            Output('page-header', 'children'),
-            Output('broker-state', 'value')
-        ]
-
-        return outputs
+        return []
 
     @abstractmethod
     def get_dash_filters(self):
-        pass
-
-    def flatten_dash_alerts(self, alerts):
         pass
 
     @abstractmethod
     def get_dash_columns(self):
         pass
 
-    # @abstractmethod
-    def get_dash_data(self, filters):
+    def flatten_dash_alerts(self, alerts):
         pass

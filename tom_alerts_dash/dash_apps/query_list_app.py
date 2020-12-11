@@ -18,7 +18,6 @@ app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOO
 
 
 def create_datatable(broker):
-    print('create table')
     return dhc.Div(
         dcc.Loading(children=[
             dhc.Div(
@@ -28,7 +27,6 @@ def create_datatable(broker):
                 id=f'alerts-table-{broker}',
                 columns=get_service_class(broker)().get_dash_columns(),
                 data=[],
-                filter_action='custom',
                 row_selectable='multi',
                 page_current=0,
                 page_size=20,
