@@ -1,3 +1,5 @@
+import logging
+
 from dash.dependencies import Input
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -9,13 +11,14 @@ from tom_alerts.brokers.mars import MARSBroker, MARSQueryForm, MARS_URL
 from tom_common.templatetags.tom_common_extras import truncate_number
 from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
+logger = logging.getLogger(__name__)
+
 
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
     # TODO: don't trigger callback unless all of ra/dec/cone are populated
     def callback(self, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
-        print('callback')
-        # callback_return_values = super().callback(broker_selection)
+        logger.info('Entering MARS callback...')
         cone_search = ''
         if any([cone_ra, cone_dec, cone_radius]):
             if all([cone_ra, cone_dec, cone_radius]):
@@ -23,13 +26,18 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             else:
                 raise PreventUpdate
 
-        form = MARSQueryForm({'query_name': 'dash query', 'broker': self.name})
-        return self.get_dash_data({
+        form = MARSQueryForm({
+            'query_name': 'dash query',
+            'broker': self.name,
             'objectId': objectId,
             'magpsf__gte': magpsf__gte,
             'rb__gte': rb__gte,
             'cone': cone_search
         })
+        form.is_valid()
+
+        alerts = self._request_alerts(form.cleaned_data)['results']
+        return self.flatten_dash_alerts(alerts)
 
 
     def get_callback_inputs(self):

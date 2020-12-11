@@ -109,7 +109,7 @@ app.layout = dbc.Container([
             id='redirection'
         ),
         dhc.Div(
-            dhc.H3(f'{broker_client._broker.name} Alerts'),
+            dhc.H3(f'View Alerts for a Broker'),
             id='page-header'
         ),
         dhc.Div(children=[
@@ -149,19 +149,56 @@ app.layout = dbc.Container([
 #         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
 #         return broker_client.get_filters(), broker_client.get_columns()
 
+def create_targets_callback(create_targets, selected_rows, row_data, broker_state):
+    print('create targets callback')
+    if create_targets and False:
+        broker_class = get_service_class(broker_state)()
+        errors = []
+        successes = []
+        for row in selected_rows:
+            target = broker_class.to_target(row_data[row]['alert'])
+            if target:
+                successes.append(target.name)  # TODO: How to indicate successes?
+            else:
+                errors.append(target.name)  # TODO: How to handle errors?
+            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
+            # add a link to go to the target list in the success message
+    
+        if successes:
+            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
+
 
 # NOTE: hidden datatables/input containers should be created for each broker, along with corresponding callbacks, on init
 # NOTE: change in broker selection should hide current datatable and show the new datatable, and update the broker-state value
 def broker_selection_callback(broker_selection, broker_state):
-    print(broker_selection, broker_state)
+    print(broker_selection)
+    print(broker_state)
     callback_return_values = ()
     if broker_selection and broker_selection != broker_state:
-        callback_return_values += (broker_selection,)
+
+        # Modify page header to display correct broker name
+        page_header = dhc.H3(f'{broker_selection} Alerts')
+        callback_return_values += (broker_selection, page_header)
+
+        # Hide all DataTables other than the one that corresponds with the selected broker
         for clazz in get_service_classes().keys():
             if broker_selection == clazz:
                 callback_return_values += ({'display': 'block'},)
             else:
                 callback_return_values += ({'display': 'none'},)
+
+        # Register the create_targets_callback with the correct inputs and deregister the old one
+        # app._callback_sets.pop()  # TODO: do not pop the callback if one isn't registered yet
+        app.callback(
+            [Output('redirection', 'children')],
+            [Input('create-targets-btn', 'n_clicks'),
+             Input(f'alerts-table-{broker_selection}', 'derived_virtual_selected_rows'),
+             Input(f'alerts-table-{broker_selection}', 'derived_virtual_data')],
+            [State('broker-state', 'value')]
+        )(create_targets_callback)
+        for callback in app._callback_sets:
+            print(callback)
+
         print(callback_return_values)
         return callback_return_values
     else:
@@ -169,23 +206,10 @@ def broker_selection_callback(broker_selection, broker_state):
 
 
 app.callback(
-    [Output('broker-state', 'value')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
+    [Output('broker-state', 'value'), Output('page-header', 'children')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
     [Input('broker-selection', 'value')],
     [State('broker-state', 'value')]
 )(broker_selection_callback)
-
-
-# @app.callback(
-#     [Output('broker-state', 'value')],
-#     [Input('broker-selection', 'value')],
-#     [State('broker-state', 'value')]
-# )
-# def broker_selection(broker_selection, broker_state):
-#     print(broker_selection, broker_state)
-#     if broker_selection:
-#         return broker_selection
-#     else:
-#         return ''
 
 
 # TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
@@ -193,26 +217,27 @@ app.callback(
 # this is the only way to support different callbacks per broker.
 for clazz in get_service_classes().keys():
     broker_client.broker = clazz
-    app_callback = app.callback(
+    table_callback = app.callback(
         Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
     )
-    app_callback(get_service_class(clazz)().callback)
+    table_callback(get_service_class(clazz)().callback)
+
+
+# create_targets_callback_inputs = [Input('create-targets-btn', 'n_clicks_timestamp')]
+# for clazz in get_service_classes().keys():
+#     create_targets_callback_inputs.append(Input(f'alerts-table-{clazz}', 'derived_virtual_selected_rows'))
+#     create_targets_callback_inputs.append(Input(f'alerts-table-{clazz}', 'derived_virtual_data'))
 
 
 # @app.callback(
 #     Output('redirection', 'children'),
-#     [Input(f'alerts-table-{broker}', 'derived_virtual_selection_rows') for clazz in get_service_classes().keys()]
+#     create_targets_callback_inputs
 # )
-# def create_targets(*args)
-
-# @app.callback(
-#     Output('redirection', 'children'),
-#     [Input('alerts-table', 'derived_virtual_selected_rows'),
-#      Input('alerts-table', 'derived_virtual_data'),
-#      Input('create-targets-btn', 'n_clicks_timestamp')]
-# )
-# def create_targets(selected_rows, row_data, create_targets):
-#     if create_targets:
+# def create_targets_callback(create_targets, *args):
+#     print('create targets callback')
+#     print(len(args))
+#     print(args[0], args[2], args[3])
+#     if create_targets and False:
 #         errors = []
 #         successes = []
 #         for row in selected_rows:
@@ -228,46 +253,9 @@ for clazz in get_service_classes().keys():
 #             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
 
 
-# @app.callback(
-#     [Output('alerts-table', 'columns'),
-#      Output('alerts-table-filters-container', 'children'),
-#      Output('page-header', 'children'),
-#      Output('broker-state', 'value')],
-#     [Input('broker-selection', 'value')],
-#     [State('broker-state', 'value')]
-# )
-# def alerts_table_filter(broker_selection, broker_state):
-#     print('here')
-#     if broker_selection and broker_selection != broker_client.broker:
-#         print(broker_selection)
-#         broker_client.broker = broker_selection
-#         # Remove the old callback from app._callback_sets and add the new one
-#         app._callback_sets.pop()
-#         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
-#         page_current = 0
-#     for callback in app._callback_sets:
-#         print(f'callback: {callback}')
-
-#     # TODO: Add example filter queries
-#     # parameters = {'page_num': page_current, 'page_size': page_size}
-#     # if filter_query:
-#     #     for filter_part in filter_query.split(' && '):
-#     #         col_name, operator, filter_value = filter_part.split(' ', 2)
-#     #         col_name = col_name[col_name.find('{') + 1: col_name.rfind('}')]
-#     #         parameters[col_name] = {'operator': operator, 'value': filter_value}
-#     # print(f'parameters: {parameters}')
-
-#     columns = broker_client.get_columns()
-#     filters = broker_client.get_filters()
-#     print(filters)
-#     page_header = dhc.H3(f'{broker_client._broker.name} Alerts')
-
-#     return columns, filters, page_header, broker_client.broker
-
-
-# Create the callback for the initial broker
-# TODO: default behavior on this table probably shouldn't be to load MARS alert, but rather prompt for
-# broker selection
 # app.callback(
-#     Output('alerts-table', 'data'), broker_client.get_callback_inputs()
-# )(broker_client._broker.callback)
+#     [Output('redirection', 'children')],
+#     [Input('create-targets-btn', 'n_clicks_timestamp')] + 
+#     [Input(f'alerts-table-{clazz}', 'derived_virtual_selected_rows') for clazz in get_service_classes().keys()] +
+#     [Input(f'alerts-table-{clazz}', 'derived_virtual_data') for clazz in get_service_classes().keys()]
+# )(create_targets_callback)
