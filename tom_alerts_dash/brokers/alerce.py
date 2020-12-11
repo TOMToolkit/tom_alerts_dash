@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
     dash_button_clicks = 0
 
-    def callback(self, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr, button_click):
+    def callback(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
+                 button_click):
         logger.info('Entering ALeRCE callback...')
         if not button_click or button_click == self.btn_clicks:
             raise PreventUpdate
@@ -34,8 +35,11 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             'dec': dec,
             'sr': sr
         })
-
         form.is_valid()
+        parameters = form.cleaned_data
+        parameters['page'] = page_current + 1  # Dash pagination is 0-indexed, but Skip is 1-indexed
+        parameters['records_per_pages'] = page_size if page_size else 20  # 20 is the Dash default page size
+
         alerts = [alert_data for alert, alert_data in self._request_alerts(form.cleaned_data)['result'].items()]
         return self.flatten_dash_alerts(alerts)
 

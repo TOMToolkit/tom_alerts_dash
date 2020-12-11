@@ -21,7 +21,8 @@ GRACE_DB_URL = 'https://gracedb.ligo.org'
 # TODO: should external apps have pip "extras" such as `pip install tom_alerts_dash[scimma]`?
 # TODO: or should tom_scimma be a dependency of tom_alerts_dash?
 class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
-    def callback(self, event_trigger_number, keyword, cone_ra, cone_dec, cone_radius, start_date, end_date):
+    def callback(self, page_current, page_size, event_trigger_number, keyword, cone_ra, cone_dec, cone_radius,
+                 start_date, end_date):
         logger.info('Entering SCIMMA callback...')
         cone_search = ''
         if any([cone_ra, cone_dec, cone_radius]):
@@ -42,8 +43,9 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         form.is_valid()
 
         parameters = form.cleaned_data
-        parameters['topic'] = 3  # form isn't valid with both topic and keyword, so this circumvents that
-        parameters['page_size'] = 20
+        parameters['topic'] = 3  # form isn't valid with both topic and event trigger number, so this circumvents that
+        parameters['page'] = page_current + 1  # Dash pagination is 0-indexed, but Skip is 1-indexed
+        parameters['page_size'] = page_size if page_size else 20  # 20 is the Dash default page size
         alerts = self._request_alerts(parameters)['results']
         return self.flatten_dash_alerts(alerts)
 

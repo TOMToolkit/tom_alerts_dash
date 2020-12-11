@@ -158,7 +158,7 @@ def broker_selection_callback(broker_selection, broker_state):
         # app._callback_sets.pop()  # TODO: do not pop the callback if one isn't registered yet
         app.callback(
             Output('redirection', 'children'),
-            [Input('create-targets-btn', 'n_clicks_timestamp'),
+            [Input('create-targets-btn', 'n_clicks'),
              Input(f'alerts-table-{broker_selection}', 'derived_virtual_selected_rows'),
              Input(f'alerts-table-{broker_selection}', 'derived_virtual_data')],
             [State('broker-state', 'value')]
@@ -178,7 +178,9 @@ def broker_selection_callback(broker_selection, broker_state):
 for class_name in get_service_classes().keys():
     broker_class = get_service_class(class_name)()
     table_callback = app.callback(
-        Output(f'alerts-table-{class_name}', 'data'), broker_class.get_callback_inputs()
+        Output(f'alerts-table-{class_name}', 'data'),
+        [Input(f'alerts-table-{class_name}', 'page_current'), Input(f'alerts-table-{class_name}', 'page_size')] +
+         broker_class.get_callback_inputs()
     )
     table_callback(broker_class.callback)
 

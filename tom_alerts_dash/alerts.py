@@ -60,7 +60,7 @@ def get_service_class(name):
 class GenericDashBroker(GenericBroker):
     name = 'Generic Broker'
 
-    def callback(self):
+    def callback(self, page_current, page_size):
         return
 
     def get_callback_inputs(self):
