@@ -149,6 +149,7 @@ app.layout = dbc.Container([
 #         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
 #         return broker_client.get_filters(), broker_client.get_columns()
 
+
 def create_targets_callback(create_targets, selected_rows, row_data, broker_state):
     print('create targets callback')
     if create_targets and False:
@@ -170,6 +171,11 @@ def create_targets_callback(create_targets, selected_rows, row_data, broker_stat
 
 # NOTE: hidden datatables/input containers should be created for each broker, along with corresponding callbacks, on init
 # NOTE: change in broker selection should hide current datatable and show the new datatable, and update the broker-state value
+@app.callback(
+    [Output('broker-state', 'value'), Output('page-header', 'children')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
+    [Input('broker-selection', 'value')],
+    [State('broker-state', 'value')]
+)
 def broker_selection_callback(broker_selection, broker_state):
     print(broker_selection)
     print(broker_state)
@@ -190,8 +196,8 @@ def broker_selection_callback(broker_selection, broker_state):
         # Register the create_targets_callback with the correct inputs and deregister the old one
         # app._callback_sets.pop()  # TODO: do not pop the callback if one isn't registered yet
         app.callback(
-            [Output('redirection', 'children')],
-            [Input('create-targets-btn', 'n_clicks'),
+            Output('redirection', 'children'),
+            [Input('create-targets-btn', 'n_clicks_timestamp'),
              Input(f'alerts-table-{broker_selection}', 'derived_virtual_selected_rows'),
              Input(f'alerts-table-{broker_selection}', 'derived_virtual_data')],
             [State('broker-state', 'value')]
@@ -205,22 +211,15 @@ def broker_selection_callback(broker_selection, broker_state):
         raise PreventUpdate
 
 
-app.callback(
-    [Output('broker-state', 'value'), Output('page-header', 'children')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
-    [Input('broker-selection', 'value')],
-    [State('broker-state', 'value')]
-)(broker_selection_callback)
-
-
 # TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
 # dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
 # this is the only way to support different callbacks per broker.
-for clazz in get_service_classes().keys():
-    broker_client.broker = clazz
+for class_name in get_service_classes().keys():
+    broker_class = get_service_class(class_name)()
     table_callback = app.callback(
-        Output(f'alerts-table-{clazz}', 'data'), broker_client.get_callback_inputs()
+        Output(f'alerts-table-{class_name}', 'data'), broker_class.get_callback_inputs()
     )
-    table_callback(get_service_class(clazz)().callback)
+    table_callback(broker_class.callback)
 
 
 # create_targets_callback_inputs = [Input('create-targets-btn', 'n_clicks_timestamp')]

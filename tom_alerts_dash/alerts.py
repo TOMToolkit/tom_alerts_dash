@@ -93,6 +93,6 @@ class GenericDashBroker(GenericBroker):
     def get_dash_columns(self):
         pass
 
-    @abstractmethod
+    # @abstractmethod
     def get_dash_data(self, filters):
         pass

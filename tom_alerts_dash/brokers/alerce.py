@@ -1,3 +1,5 @@
+import logging
+
 from astropy.time import Time, TimezoneInfo
 from dash.dependencies import Input
 from dash.exceptions import PreventUpdate
@@ -6,15 +8,17 @@ import dash_core_components as dcc
 import dash_html_components as dhc
 
 from tom_alerts_dash.alerts import GenericDashBroker
-from tom_alerts.brokers.alerce import ALeRCEBroker, ALeRCEQueryForm
+from tom_alerts.brokers.alerce import ALeRCEBroker, ALeRCEQueryForm, ALERCE_URL
 from tom_common.templatetags.tom_common_extras import truncate_number
 from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
+
+logger = logging.getLogger(__name__)
 
 
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
-    def callback(self, oid, classearly, button_click):
-        print('alerce callback')
+    def callback(self, oid, classearly, ra, dec, sr, button_click):
+        logger.info('Entering ALeRCE callback...')
         if not button_click:
             raise PreventUpdate
 
@@ -22,17 +26,24 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             'query_name': 'ALeRCE Dash Query',
             'broker': self.name,
             'oid': oid,
-            'classearly': classearly
+            'classearly': classearly,
+            'ra': ra,
+            'dec': dec,
+            'sr': sr
         })
 
         form.is_valid()
-        return self._request_alerts(form.cleaned_data)
+        alerts = [alert_data for alert, alert_data in self._request_alerts(form.cleaned_data)['result'].items()]
+        return self.flatten_dash_alerts(alerts)
 
     def get_callback_inputs(self):
         inputs = super().get_callback_inputs()
         inputs += [
             Input('oid', 'value'),
             Input('classearly', 'value'),
+            Input('ra', 'value'),
+            Input('dec', 'value'),
+            Input('sr', 'value'),
             Input('trigger-filter-btn', 'n_clicks_timestamp')
         ]
         return inputs
@@ -52,6 +63,28 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                              for classifier in ALeRCEQueryForm.early_classifier_choices()
                              if classifier[0] is not None]
                 ),
+            ]),
+            dbc.Row([
+                dbc.Col(dcc.Input(
+                    id='ra',
+                    type='text',
+                    placeholder='Right Ascension',
+                    debounce=True
+                )),
+                dbc.Col(dcc.Input(
+                    id='dec',
+                    type='text',
+                    placeholder='Declination',
+                    debounce=True
+                )),
+                dbc.Col(dcc.Input(
+                    id='sr',
+                    type='text',
+                    placeholder='Search Radius',
+                    debounce=True
+                ))
+            ]),
+            dbc.Row([
                 dbc.Button(
                     'Filter', 
                     id='trigger-filter-btn',
@@ -99,6 +132,6 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             {'id': 'classifier_probability', 'name': 'Classifier Probability', 'type': 'text'},
         ]
 
-    def get_dash_data(self, filters):
-        alerts = self.filter_alerts(filters)
-        return self.flatten_dash_alerts(alerts)
+    # def get_dash_data(self, filters):
+    #     alerts = self.filter_alerts(filters)
+    #     return self.flatten_dash_alerts(alerts)
