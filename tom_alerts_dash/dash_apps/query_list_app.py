@@ -18,14 +18,28 @@ app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOO
 
 
 def create_datatable(broker):
-    return dhc.Div(
+    broker_class = get_service_class(broker)()
+    return dhc.Div(children=[
+        dhc.Div(
+            id=f'redirection-{broker}'
+        ),
         dcc.Loading(children=[
             dhc.Div(
-                get_service_class(broker)().get_dash_filters()
+                broker_class.get_dash_filters()
+            ),
+            dhc.Div(
+                dhc.P(
+                    dbc.Button(
+                        'Create targets from selected', 
+                        id=f'create-targets-btn-{broker}',
+                        outline=True,
+                        color='info'
+                    ),
+                )
             ),
             DataTable(
                 id=f'alerts-table-{broker}',
-                columns=get_service_class(broker)().get_dash_columns(),
+                columns=broker_class.get_dash_columns(),
                 data=[],
                 row_selectable='multi',
                 page_current=0,
@@ -60,8 +74,7 @@ def create_datatable(broker):
                 }
             )
         ], id=f'alerts-loading-container-{broker}'),
-        id=f'alerts-container-{broker}', style={'display': 'none'}
-    )
+    ], id=f'alerts-container-{broker}', style={'display': 'none'})
 
 
 app.layout = dbc.Container([
@@ -83,43 +96,20 @@ app.layout = dbc.Container([
                 )
             )
         ]),
-        dhc.Div(
-            dhc.P(
-                dbc.Button(
-                    'Create targets from selected', 
-                    id='create-targets-btn',
-                    outline=True,
-                    color='info'
-                ),
-            )
-        ),
         dhc.Div(  # Alerts datatable goes here
             children=[create_datatable(class_name) for class_name in get_service_classes().keys()],
         ),
     ])
 ])
 
-# @app.callback(
-#     [Output('alerts-table-filter-container', 'children'),
-#      Output('alerts-table', 'columns')],
-#     [Input('broker-selection', 'value')]
-# )
-# def broker_selection(broker_selection):
-#     if broker_selection.has_changed:
-#         app._callback_sets.pop()
-#         app.callback(Output('alerts-table', 'data'), broker_client.get_callback_inputs())(broker_client.get_filter_callback())
-#         return broker_client.get_filters(), broker_client.get_columns()
 
-
-def create_targets_callback(create_targets, selected_rows, row_data, broker_state):
-    print('create targets callback')
+def create_targets(create_targets, selected_rows, row_data, broker_state):
+    print(f'create targets callback: {broker_state}')
     if create_targets:
         broker_class = get_service_class(broker_state)()
         errors = []
         successes = []
-        print('here1')
         for row in selected_rows:
-            print('here2')
             target = broker_class.to_target(row_data[row]['alert'])
             if target:
                 successes.append(target.name)  # TODO: How to indicate successes?
@@ -130,8 +120,8 @@ def create_targets_callback(create_targets, selected_rows, row_data, broker_stat
     
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
-    
-    return dhc.Div()
+    else:
+        raise PreventUpdate
 
 
 # NOTE: hidden datatables/input containers should be created for each broker, along with corresponding callbacks, on init
@@ -158,18 +148,9 @@ def broker_selection_callback(broker_selection, broker_state):
             else:
                 callback_return_values += ({'display': 'none'},)
 
-        # Register the create_targets_callback with the correct inputs and deregister the old one
-        app._callback_sets.pop()  # TODO: do not pop the callback if one isn't registered yet
-        app.callback(
-            Output('redirection', 'children'),
-            [Input('create-targets-btn', 'n_clicks'),
-             Input(f'alerts-table-{broker_selection}', 'derived_virtual_selected_rows'),
-             Input(f'alerts-table-{broker_selection}', 'derived_virtual_data')],
-            [State('broker-state', 'value')]
-        )(create_targets_callback)
-        for callback in app._callback_sets:
-            print(callback)
-            print()
+        # for callback in app._callback_sets:
+        #     print(callback)
+        #     print()
 
         print(callback_return_values)
         return callback_return_values
@@ -189,50 +170,11 @@ for class_name in get_service_classes().keys():
     )
     table_callback(broker_class.callback)
 
-
-# create_targets_callback_inputs = [Input('create-targets-btn', 'n_clicks_timestamp')]
-# for clazz in get_service_classes().keys():
-#     create_targets_callback_inputs.append(Input(f'alerts-table-{clazz}', 'derived_virtual_selected_rows'))
-#     create_targets_callback_inputs.append(Input(f'alerts-table-{clazz}', 'derived_virtual_data'))
-
-
-# @app.callback(
-#     Output('redirection', 'children'),
-#     create_targets_callback_inputs,
-#     State('broker-state', 'value')
-# )
-# def create_targets_callback(create_targets, *args):
-#     broker_classes = get_service_classes().keys()
-#     index = 0
-#     broker_index = -1
-#     for broker_class in broker_classes:
-#         if broker_class == args[-1]:
-#             broker_index = index
-#             break
-#         index += 1
-#     print('create targets callback')
-#     print(len(args))
-#     print(args[0], args[2], args[3])
-#     selected_rows = args[broker_index + 1]  # TODO: the index calculation is an incorrect placeholder
-#     if create_targets and False:
-#         errors = []
-#         successes = []
-#         for row in selected_rows:
-#             target = broker_client._broker.to_target(row_data[row]['alert'])
-#             if target:
-#                 successes.append(target.name)  # TODO: How to indicate successes?
-#             else:
-#                 errors.append(target.name)  # TODO: How to handle errors?
-#             # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
-#             # add a link to go to the target list in the success message
-    
-#         if successes:
-#             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
-
-
-# app.callback(
-#     [Output('redirection', 'children')],
-#     [Input('create-targets-btn', 'n_clicks_timestamp')] + 
-#     [Input(f'alerts-table-{clazz}', 'derived_virtual_selected_rows') for clazz in get_service_classes().keys()] +
-#     [Input(f'alerts-table-{clazz}', 'derived_virtual_data') for clazz in get_service_classes().keys()]
-# )(create_targets_callback)
+    create_targets_callback = app.callback(
+        Output(f'redirection-{class_name}', 'children'),
+        [Input(f'create-targets-btn-{class_name}', 'n_clicks'),
+         Input(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
+         Input(f'alerts-table-{class_name}','derived_virtual_data')],
+        [State('broker-state', 'value')]
+    )
+    create_targets_callback(create_targets)
