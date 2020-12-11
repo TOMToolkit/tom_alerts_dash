@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
-    # TODO: don't trigger callback unless all of ra/dec/cone are populated
     def callback(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
         logger.info('Entering MARS callback...')
         cone_search = ''
