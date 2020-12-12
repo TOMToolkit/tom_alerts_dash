@@ -41,7 +41,6 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         alerts = self._request_alerts(parameters)['results']
         return self.flatten_dash_alerts(alerts)
 
-
     def get_callback_inputs(self):
         inputs = super().get_callback_inputs()
         inputs += [

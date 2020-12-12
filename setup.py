@@ -27,7 +27,7 @@ setup(
     keywords=['tomtoolkit', 'astronomy', 'astrophysics', 'cosmology', 'science', 'fits', 'observatory'],
     packages=find_packages(),
     install_requires=[
-        'tomtoolkit>=1.13.0a5',
+        'tomtoolkit>=2.0.1',
         'django_plotly_dash==1.4.2',
         'dash-bootstrap-components==0.10.3',
         'whitenoise==5.2.0',
@@ -37,7 +37,7 @@ setup(
     extras_require={
         'scimma': ['tom-scimma'],
         'antares': ['tom-antares'],
-        'test': ['tom-scimma', 'tom-antares']
+        'test': ['tom-scimma', 'tom-antares', 'factory_boy']
     },
     include_package_data=True,
 )
