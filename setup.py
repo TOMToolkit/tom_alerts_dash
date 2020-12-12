@@ -36,7 +36,8 @@ setup(
     ],
     extras_require={
         'scimma': ['tom-scimma'],
-        'antares': ['tom-antares']
+        'antares': ['tom-antares'],
+        'test': ['tom-scimma', 'tom-antares']
     },
     include_package_data=True,
 )

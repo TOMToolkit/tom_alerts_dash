@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'django_comments',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
     'bootstrap4',
     'tom_alerts_dash',
