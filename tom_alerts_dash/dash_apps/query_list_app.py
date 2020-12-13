@@ -79,7 +79,7 @@ app.layout = dbc.Container([
             id='redirection'
         ),
         dhc.Div(
-            dhc.H3(f'View Alerts for a Broker'),
+            dhc.H3('View Alerts for a Broker'),
             id='page-header'
         ),
         dhc.Div(children=[
