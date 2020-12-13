@@ -17,7 +17,7 @@ class SiderealTargetFactory(factory.django.DjangoModelFactory):
     pm_dec = factory.Faker('pyfloat')
 
 
-def create_mars_alert():
+def create_mars_alert(ra=None, dec=None, magpsf=None, rb=None):
     fake = Faker()
     return {
         'avro': fake.uri(),
@@ -25,10 +25,10 @@ def create_mars_alert():
         'objectId': fake.pystr_format(string_format='ZTF##???????'),
         'lco_id': fake.pyint(min_value=100000000, max_value=999999999),
         'candidate': {
-            'ra': fake.pyfloat(min_value=0, max_value=360),
-            'dec': fake.pyfloat(min_value=0, max_value=360),
-            'magpsf': fake.pyfloat(min_value=12, max_value=22),
-            'rb': fake.pyfloat(min_value=0, max_value=1),
+            'ra': ra if ra else fake.pyfloat(min_value=0, max_value=360),
+            'dec': dec if dec else fake.pyfloat(min_value=0, max_value=360),
+            'magpsf': magpsf if magpsf else fake.pyfloat(min_value=12, max_value=22),
+            'rb': rb if rb else fake.pyfloat(min_value=0, max_value=1),
             'drb': fake.pyfloat(min_value=0, max_value=1)
         }
     }
