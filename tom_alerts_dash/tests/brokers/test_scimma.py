@@ -1,3 +1,4 @@
+from inspect import signature
 from unittest.mock import patch
 
 from dash.exceptions import PreventUpdate
@@ -21,6 +22,8 @@ class TestSCIMMADashBroker(TestCase):
             self.assertIn(key, flattened_alerts[0])
         for key in ['topic', 'test_bad_key']:
             self.assertNotIn(key, flattened_alerts[0])  # Test that no unwanted attributes are included
+
+        # TODO: refactor to move test_callback assertion up here
 
     def test_callback_partial_cone_search(self):
         with self.assertRaises(PreventUpdate):
@@ -46,3 +49,9 @@ class TestSCIMMADashBroker(TestCase):
              'comments': test_alert['extracted_fields']['comment_warnings'],
              'alert': test_alert},
             alerts[0])
+
+    def test_callback_parameters_match_inputs(self):
+        """Test that callback function has the same number of parameters as the inputs."""
+        callback_num_params = len(signature(self.broker.callback).parameters)
+        inputs = self.broker.get_callback_inputs()
+        self.assertEqual(callback_num_params, len(inputs))

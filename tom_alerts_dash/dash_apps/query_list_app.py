@@ -1,5 +1,3 @@
-import re
-
 import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -7,7 +5,6 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as dhc
 from dash_table import DataTable
-from django.conf import settings
 from django_plotly_dash import DjangoDash
 from django.shortcuts import reverse
 
@@ -117,7 +114,7 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
                 errors.append(target.name)  # TODO: How to handle errors?
             # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
             # add a link to go to the target list in the success message
-    
+
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
     else:
@@ -165,8 +162,9 @@ for class_name in get_service_classes().keys():
     broker_class = get_service_class(class_name)()
     table_callback = app.callback(
         Output(f'alerts-table-{class_name}', 'data'),
-        [Input(f'alerts-table-{class_name}', 'page_current'), Input(f'alerts-table-{class_name}', 'page_size')] +
-         broker_class.get_callback_inputs()
+        # TODO: Should the broker handle this, or this class?
+        # [Input(f'alerts-table-{class_name}', 'page_current'), Input(f'alerts-table-{class_name}', 'page_size')] +
+        broker_class.get_callback_inputs()
     )
     table_callback(broker_class.callback)
 

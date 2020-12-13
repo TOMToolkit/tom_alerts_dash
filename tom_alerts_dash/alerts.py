@@ -64,7 +64,10 @@ class GenericDashBroker(GenericBroker):
         return
 
     def get_callback_inputs(self):
-        return []
+        return [
+            Input(f'alerts-table-{self.name}', 'page_current'),
+            Input(f'alerts-table-{self.name}', 'page_size')
+        ]
 
     @abstractmethod
     def get_dash_filters(self):

@@ -52,15 +52,16 @@ def create_scimma_alert(ra=None, dec=None, rank=None):
     }
 
 
-def create_alerce_alert(lastmjd=None, mean_magpsf_g=None, mean_magpsf_r=None, classrf=None, classearly=None,
-                        pclassrf=None, pclassearly=None):
+def create_alerce_alert(meanra=None, meandec=None, firstmjd=None, lastmjd=None, mean_magpsf_g=None, mean_magpsf_r=None,
+                        classrf=None, classearly=None, pclassrf=None, pclassearly=None):
     return {'oid': fake.pystr_format(string_format='ZTF##???????', letters='abcdefghijklmnopqrstuvwxyz'),
-            'meanra': fake.pyfloat(min_value=0, max_value=360),
-            'meandec': fake.pyfloat(min_value=0, max_value=360),
+            'meanra': meanra if meanra else fake.pyfloat(min_value=0, max_value=360),
+            'meandec': meandec if meandec else fake.pyfloat(min_value=0, max_value=360),
+            'firstmjd': firstmjd if firstmjd else fake.pyfloat(min_value=56000, max_value=59000, right_digits=1),
             'lastmjd': lastmjd if lastmjd else fake.pyfloat(min_value=56000, max_value=59000, right_digits=1),
             'mean_magpsf_g': mean_magpsf_g if mean_magpsf_g else fake.pyfloat(min_value=16, max_value=25),
             'mean_magpsf_r': mean_magpsf_r if mean_magpsf_r else fake.pyfloat(min_value=16, max_value=25),
-            'classrf': classrf if classrf else fake.pystr(max_chars=10),
-            'classearly': classearly if classearly else fake.pystr(max_chars=10),
+            'classrf': classrf if classrf else fake.pyint(min_value=1, max_value=30),
+            'classearly': classearly if classearly else fake.pyint(min_value=1, max_value=30),
             'pclassrf': pclassrf if pclassrf else fake.pyfloat(min_value=0, max_value=1),
             'pclassearly': pclassearly if pclassearly else fake.pyfloat(min_value=0, max_value=1)}
