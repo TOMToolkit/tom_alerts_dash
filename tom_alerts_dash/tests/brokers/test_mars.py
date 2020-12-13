@@ -1,5 +1,3 @@
-import json
-from requests import Response
 from unittest.mock import patch
 
 from dash.exceptions import PreventUpdate
@@ -22,7 +20,7 @@ class TestMARSDashBroker(TestCase):
         for key in ['objectId', 'ra', 'dec', 'magpsf', 'rb']:
             self.assertIn(key, flattened_alerts[0])
         for key in ['drb', 'test_bad_key']:
-            self.assertNotIn('drb', flattened_alerts[0])  # Test that no unwanted attributes are included
+            self.assertNotIn(key, flattened_alerts[0])  # Test that no unwanted attributes are included
 
     def test_callback_partial_cone_search(self):
         with self.assertRaises(PreventUpdate):

@@ -35,7 +35,7 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
             'query_name': 'SCIMMA Dash Query',
             'broker': self.name,
             'keyword': keyword,
-            'cone': cone_search,
+            'cone_search': cone_search,
             'event_trigger_number': event_trigger_number,
             'alert_timestamp_after': start_date,
             'alert_timestamp_before': end_date,
