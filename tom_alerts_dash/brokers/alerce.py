@@ -1,6 +1,6 @@
 import logging
 
-from astropy.time import Time, TimezoneInfo
+from astropy.time import Time
 from dash.dependencies import Input
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -21,7 +21,7 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
     def callback(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
                  button_click):
         logger.info('Entering ALeRCE callback...')
-        if not button_click or button_click == self.btn_clicks:
+        if not button_click or button_click == self.dash_button_clicks:
             raise PreventUpdate
         else:
             self.dash_button_clicks = button_click
@@ -31,6 +31,9 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             'broker': self.name,
             'oid': oid,
             'classearly': classearly,
+            'pclassearly': pclassearly,
+            'classrf': classrf,
+            'pclassrf': pclassrf,
             'ra': ra,
             'dec': dec,
             'sr': sr
