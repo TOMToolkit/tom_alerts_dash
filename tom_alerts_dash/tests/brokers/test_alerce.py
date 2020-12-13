@@ -63,9 +63,9 @@ class TestALeRCEDashBroker(TestCase):
     def test_callback(self, mock_request_alerts):
         test_alerts = [create_alerce_alert() for i in range(0, 5)]
         test_result = {alert['oid']: alert for alert in test_alerts}
-        # TODO: this
         mock_request_alerts.return_value = {'result': test_result}
         alerts = self.broker.callback(1, 20, None, None, None, None, None, None, None, None, 10)
+        self.assertEqual(len(alerts), len(test_alerts))
         self.assertEqual(self.broker.dash_button_clicks, 10)
 
     def test_callback_parameters_match_inputs(self):

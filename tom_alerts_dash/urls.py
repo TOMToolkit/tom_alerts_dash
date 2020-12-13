@@ -1,6 +1,6 @@
 from django.urls import path
 
-from tom_alerts_dash import dash
+from tom_alerts_dash import dash  # noqa - this import is necessary for Dash to run
 from tom_alerts_dash.views import BrokerQueryBrowseView, BrokerQueryListView, RunQueryView
 
 app_name = 'tom_alerts_dash'

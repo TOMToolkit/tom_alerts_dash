@@ -1,4 +1,3 @@
-import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -27,7 +26,7 @@ def create_datatable(broker):
             dhc.Div(
                 dhc.P(
                     dbc.Button(
-                        'Create targets from selected', 
+                        'Create targets from selected',
                         id=f'create-targets-btn-{broker}',
                         outline=True,
                         color='info'
@@ -65,7 +64,7 @@ def create_datatable(broker):
                     'backgroundColor': 'rgb(256, 233, 233)'
                 },
                 style_header={
-                    'backgroundColor': 'rgb(213, 223, 242)', 
+                    'backgroundColor': 'rgb(213, 223, 242)',
                     'font-family': 'Helvetica Neue, Helvetica, Arial, sans-serif',
                     'fontWeight': 'bold'
                 }
@@ -112,7 +111,7 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
                 successes.append(target.name)  # TODO: How to indicate successes?
             else:
                 errors.append(target.name)  # TODO: How to handle errors?
-            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but 
+            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but
             # add a link to go to the target list in the success message
 
         if successes:
@@ -121,10 +120,11 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
         raise PreventUpdate
 
 
-# NOTE: hidden datatables/input containers should be created for each broker, along with corresponding callbacks, on init
-# NOTE: change in broker selection should hide current datatable and show the new datatable, and update the broker-state value
+# NOTE: hidden datatables/input should be created for each broker, along with corresponding callbacks, on init
+# NOTE: change in broker selection hides current table and shows the new one, and update the broker-state value
 @app.callback(
-    [Output('broker-state', 'value'), Output('page-header', 'children')] + [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
+    [Output('broker-state', 'value'), Output('page-header', 'children')] +
+    [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
     [Input('broker-selection', 'value')],
     [State('broker-state', 'value')]
 )
@@ -172,7 +172,7 @@ for class_name in get_service_classes().keys():
         Output(f'redirection-{class_name}', 'children'),
         [Input(f'create-targets-btn-{class_name}', 'n_clicks'),
          Input(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
-         Input(f'alerts-table-{class_name}','derived_virtual_data')],
+         Input(f'alerts-table-{class_name}', 'derived_virtual_data')],
         [State('broker-state', 'value')]
     )
     create_targets_callback(create_targets)

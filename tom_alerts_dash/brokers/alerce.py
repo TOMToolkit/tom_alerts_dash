@@ -116,7 +116,7 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
                 dbc.Col(dbc.Button(
-                    'Filter', 
+                    'Filter',
                     id='trigger-filter-btn',
                     outline=True,
                     color='info'

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from importlib import import_module
 
-from dash.dependencies import Input, Output
+from dash.dependencies import Input
 from django.conf import settings
 
 from tom_alerts.alerts import GenericBroker

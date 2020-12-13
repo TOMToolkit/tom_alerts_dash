@@ -40,8 +40,9 @@ class TestSCIMMADashBroker(TestCase):
         test_alert = create_scimma_alert()
         mock_request_alerts.return_value = {'results': [test_alert]}
         alerts = self.broker.callback(1, 20, '', 'test_keyword', None, None, None, None, None)
+        expected_url = f'https://gracedb.ligo.org/superevents/{test_alert["message"]["event_trig_num"]}/view/'
         self.assertDictContainsSubset(
-            {'alert_identifier': f'[{test_alert["alert_identifier"]}](https://gracedb.ligo.org/superevents/{test_alert["message"]["event_trig_num"]}/view/)',
+            {'alert_identifier': f'[{test_alert["alert_identifier"]}]({expected_url})',
              'counterpart_identifier': test_alert['extracted_fields']['counterpart_identifier'],
              'ra': test_alert['right_ascension_sexagesimal'],
              'dec': test_alert['declination_sexagesimal'],

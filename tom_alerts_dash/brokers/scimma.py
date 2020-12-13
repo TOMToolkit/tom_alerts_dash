@@ -8,9 +8,7 @@ import dash_html_components as dhc
 import dash_core_components as dcc
 
 from tom_alerts_dash.alerts import GenericDashBroker
-from tom_common.templatetags.tom_common_extras import truncate_number
 from tom_scimma.scimma import SCIMMABroker, SCIMMAQueryForm
-from tom_targets.templatetags.targets_extras import deg_to_sexigesimal
 
 logger = logging.getLogger(__name__)
 
