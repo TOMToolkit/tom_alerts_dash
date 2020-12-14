@@ -20,7 +20,53 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
     def callback(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
                  button_click):
+        """
+        ALeRCE-specific callback function for BrokerQueryBrowseView. Queries ALeRCE based on parameters from DataTable
+        inputs. The callback will not trigger a query unless the "Filter" button is clicked, due to the fact that ALeRCE
+        queries run very long.
+
+        :param page_current: Currently selected page
+        :type page_current: int
+
+        :param page_size: Page size for pagination. Not currently used.
+        :type page_size: int
+
+        :param oid: ZTF objectId to search for
+        :type oid: string
+
+        :param ra: Right Ascension to use in cone search
+        :type ra: string
+
+        :param classearly: Stamp classification to filter by
+        :param classearly: string
+
+        :param pclassearly: Probability of stamp classification specified by classrf filter
+        :param pclassearly: string
+
+        :param classrf: Light curve classification to filter by
+        :param classrf: string
+
+        :param pclassrf: Probability of light curve classification specified by classrf filter
+        :param pclassrf: string
+
+        :param dec: Declination to use in cone search
+        :type dec: string
+
+        :param sr: Radius to use in cone search, in degrees
+        :type sr: string
+
+        :param button_click: Number of times the filter-button has been clicked
+        :param button_click: int
+
+        :returns: list of flattened alerts
+        :rtype: list of dicts
+
+        :raises: PreventUpdate exception if some but not all cone search parameters are submitted
+        """
         logger.info('Entering ALeRCE callback...')
+        # Dash does not return the state of a button, but rather the number of clicks. To determine if the callback was
+        # triggered by a new button click, the broker tracks the number of clicks, and we check that it has changed
+        # before querying ALeRCE.
         if not button_click or button_click == self.dash_button_clicks:
             raise PreventUpdate
         else:
@@ -47,6 +93,12 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         return self.flatten_dash_alerts(alerts)
 
     def get_callback_inputs(self):
+        """
+        Returns SCIMMA-specific inputs used to trigger callback function.
+
+        :returns: list of inputs corresponding to dash filters
+        :rtype: list
+        """
         inputs = super().get_callback_inputs()
         inputs += [
             Input('oid', 'value'),
@@ -62,6 +114,12 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         return inputs
 
     def get_dash_filters(self):
+        """
+        Returns SCIMMA-specific filter inputs layout
+
+        :returns: layout of Dash input components
+        :rtype: dash_html_components.Div 
+        """
         filters = dhc.Div([
             dbc.Row([
                 dbc.Col(dcc.Input(
@@ -125,7 +183,36 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         ])
         return filters
 
+    def get_dash_columns(self):
+        """
+        Returns ALeRCE-specific Dash DataTable columns.
+
+        :returns: columns for display
+        :rtype: list of dicts
+        """
+        return [
+            {'id': 'oid', 'name': 'Object ID', 'type': 'text', 'presentation': 'markdown'},
+            {'id': 'meanra', 'name': 'Right Ascension', 'type': 'text'},
+            {'id': 'meandec', 'name': 'Declination', 'type': 'text'},
+            {'id': 'discovery_date', 'name': 'Discovery Date', 'type': 'datetime'},
+            {'id': 'classifier', 'name': 'Class', 'type': 'text'},
+            {'id': 'classifier_type', 'name': 'Classifier Type', 'type': 'text'},
+            {'id': 'classifier_probability', 'name': 'Classifier Probability', 'type': 'text'},
+        ]
+
     def flatten_dash_alerts(self, alerts):
+        """
+        Transforms alerts returned by ALeRCE into a Dash DataTable format. Adds an embedded link to the original alert.
+        Converts decimal degrees to sexagesimal. Truncates decimals to 4 places. Converts MJD value to datetime.
+        Includes light curve classifier if it exists, and stamp classifier otherwise. Displays classifier name instead
+        of classifier number.
+
+        :param alerts: dict of alerts from ALeRCE
+        :type alerts: dict of dicts
+
+        :returns: flattened alerts
+        :rtype: list of dicts
+        """
         flattened_alerts = []
         for alert in alerts:
             url = f'{ALERCE_URL}/object/{alert["oid"]}'
@@ -150,14 +237,3 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                 'alert': alert
             })
         return flattened_alerts
-
-    def get_dash_columns(self):
-        return [
-            {'id': 'oid', 'name': 'Object ID', 'type': 'text', 'presentation': 'markdown'},
-            {'id': 'meanra', 'name': 'Right Ascension', 'type': 'text'},
-            {'id': 'meandec', 'name': 'Declination', 'type': 'text'},
-            {'id': 'discovery_date', 'name': 'Discovery Date', 'type': 'datetime'},
-            {'id': 'classifier', 'name': 'Class', 'type': 'text'},
-            {'id': 'classifier_type', 'name': 'Classifier Type', 'type': 'text'},
-            {'id': 'classifier_probability', 'name': 'Classifier Probability', 'type': 'text'},
-        ]

@@ -19,8 +19,46 @@ GRACE_DB_URL = 'https://gracedb.ligo.org'
 # TODO: should external apps have pip "extras" such as `pip install tom_alerts_dash[scimma]`?
 # TODO: or should tom_scimma be a dependency of tom_alerts_dash?
 class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
+
     def callback(self, page_current, page_size, event_trigger_number, keyword, cone_ra, cone_dec, cone_radius,
                  start_date, end_date):
+        """
+        SCIMMA-specific callback function for BrokerQueryBrowseView. Queries SCIMMA based on parameters from DataTable
+        inputs. The callback will not modify any bound components if one or more, but not all, cone search inputs are
+        submitted.
+
+        :param page_current: Currently selected page
+        :type page_current: int
+
+        :param page_size: Page size for pagination. Not currently used.
+        :type page_size: int
+
+        :param event_trigger_number: Event trigger number to search for
+        :type event_trigger_number: string
+
+        :param keyword: Keyword to search for
+        :type keyword: string
+
+        :param cone_ra: Right Ascension to use in cone search
+        :type cone_ra: string
+
+        :param cone_dec: Declination to use in cone search
+        :type cone_dec: string
+
+        :param cone_radius: Radius to use in cone search, in degrees
+        :type cone_radius: string
+
+        :param start_date: Earliest date to filter by
+        :param start_date: string
+
+        :param end_date: Latest date to filter by
+        :param end_date: string
+
+        :returns: list of flattened alerts
+        :rtype: list of dicts
+
+        :raises: PreventUpdate exception if some but not all cone search parameters are submitted
+        """
         logger.info('Entering SCIMMA callback...')
         cone_search = ''
         if any([cone_ra, cone_dec, cone_radius]):
@@ -48,6 +86,12 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         return self.flatten_dash_alerts(alerts)
 
     def get_callback_inputs(self):
+        """
+        Returns SCIMMA-specific inputs used to trigger callback function.
+
+        :returns: list of inputs corresponding to dash filters
+        :rtype: list
+        """
         inputs = super().get_callback_inputs()
         inputs += [
             Input('keyword', 'value'),
@@ -61,6 +105,12 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         return inputs
 
     def get_dash_filters(self):
+        """
+        Returns SCIMMA-specific filter inputs layout
+
+        :returns: layout of Dash input components
+        :rtype: dash_html_components.Div 
+        """
         filters = dhc.Div([
             dbc.Row([
                 dbc.Col(dcc.Input(
@@ -108,6 +158,12 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         return filters
 
     def get_dash_columns(self):
+        """
+        Returns SCIMMA-specific Dash DataTable columns.
+
+        :returns: columns for display
+        :rtype: list of dicts
+        """
         return [
             {'id': 'alert_identifier', 'name': 'Alert Identifier', 'type': 'text', 'presentation': 'markdown'},
             {'id': 'counterpart_identifier', 'name': 'Counterpart Identifier', 'type': 'text'},
@@ -118,6 +174,16 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         ]
 
     def flatten_dash_alerts(self, alerts):
+        """
+        Transforms alerts returned by SCIMMA into a Dash DataTable format. Adds an embedded link to the original alert.
+        Converts decimal degrees to sexagesimal.
+
+        :param alerts: list of alerts from SCIMMA
+        :type alerts: list of dicts
+
+        :returns: flattened alerts
+        :rtype: list of dicts
+        """
         flattened_alerts = []
         for alert in alerts:
             url = f'{GRACE_DB_URL}/superevents/{alert["message"]["event_trig_num"]}/view/'

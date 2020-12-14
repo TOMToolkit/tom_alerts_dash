@@ -16,7 +16,41 @@ logger = logging.getLogger(__name__)
 
 class MARSDashBroker(MARSBroker, GenericDashBroker):
 
-    def callback(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf__gte, rb__gte):
+    def callback(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte, rb_gte):
+        """
+        MARS-specific callback function for BrokerQueryBrowseView. Queries MARS based on parameters from DataTable
+        inputs. The callback will not modify any bound components if one or more, but not all, cone search inputs are
+        submitted.
+
+        :param page_current: Currently selected page
+        :type page_current: int
+
+        :param page_size: Page size for pagination. Not currently used.
+        :type page_size: int
+
+        :param objectId: ZTF objectId to search for
+        :type objectId: string
+
+        :param cone_ra: Right Ascension to use in cone search
+        :type cone_ra: string
+
+        :param cone_dec: Declination to use in cone search
+        :type cone_dec: string
+
+        :param cone_radius: Radius to use in cone search, in degrees
+        :type cone_radius: string
+
+        :param magpsf_lte: Maximum magnitude to filter by
+        :param magpsf_lte: string
+
+        :param rb_gte: Minimum real-bogus score to filter by
+        :param rb_gte: string
+
+        :returns: list of flattened alerts
+        :rtype: list of dicts
+
+        :raises: PreventUpdate exception if some but not all cone search parameters are submitted
+        """
         logger.info('Entering MARS callback...')
         cone_search = ''
         if any([cone_ra, cone_dec, cone_radius]):
@@ -29,8 +63,8 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             'query_name': 'dash query',
             'broker': self.name,
             'objectId': objectId,
-            'magpsf__gte': magpsf__gte,
-            'rb__gte': rb__gte,
+            'magpsf__lte': magpsf_lte,
+            'rb__gte': rb_gte,
             'cone': cone_search
         })
         form.is_valid()
@@ -42,18 +76,30 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         return self.flatten_dash_alerts(alerts)
 
     def get_callback_inputs(self):
+        """
+        Returns MARS-specific inputs used to trigger callback function.
+
+        :returns: list of inputs corresponding to dash filters
+        :rtype: list
+        """
         inputs = super().get_callback_inputs()
         inputs += [
             Input('objname-search', 'value'),
             Input('cone-ra', 'value'),
             Input('cone-dec', 'value'),
             Input('cone-radius', 'value'),
-            Input('magpsf-min', 'value'),
+            Input('magpsf-max', 'value'),
             Input('rb-min', 'value'),
         ]
         return inputs
 
     def get_dash_filters(self):
+        """
+        Returns MARS-specific filter inputs layout
+
+        :returns: layout of Dash input components
+        :rtype: dash_html_components.Div 
+        """
         filters = dhc.Div([
             dbc.Row([
                 dbc.Col(dcc.Input(
@@ -63,9 +109,9 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='magpsf-min',
+                    id='magpsf-max',
                     type='number',
-                    placeholder='Magnitude Minimum',
+                    placeholder='Magnitude Maximum',
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
@@ -99,6 +145,12 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         return filters
 
     def get_dash_columns(self):
+        """
+        Returns MARS-specific Dash DataTable columns.
+
+        :returns: columns for display
+        :rtype: list of dicts
+        """
         return [
             {'id': 'objectId', 'name': 'Name', 'type': 'text', 'presentation': 'markdown'},
             {'id': 'ra', 'name': 'Right Ascension', 'type': 'text'},
@@ -108,6 +160,16 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         ]
 
     def flatten_dash_alerts(self, alerts):
+        """
+        Transforms alerts returned by MARS into a Dash DataTable format. Adds an embedded link to the original alert.
+        Converts decimal degrees to sexagesimal. Truncates decimals to 4 places.
+
+        :param alerts: list of alerts from MARS
+        :type alerts: list of dicts
+
+        :returns: flattened alerts
+        :rtype: list of dicts
+        """
         flattened_alerts = []
         for alert in alerts:
             url = f'{MARS_URL}/{alert["lco_id"]}/'

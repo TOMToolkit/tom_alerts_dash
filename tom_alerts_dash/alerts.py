@@ -56,14 +56,45 @@ def get_service_class(name):
         )
 
 
-# TODO: Finalize interface and document
 class GenericDashBroker(GenericBroker):
+    """
+    Interface class for implementation of a Dash-compatible broker module. Please refer to the built-in ALeRCE, MARS,
+    and SCIMMA Dash broker modules for implementation examples.
+    """
     name = 'Generic Broker'
 
     def callback(self, page_current, page_size):
+        """
+        Broker-specific callback function triggered on broker-specific filter inputs. Accepts filter inputs and queries
+        the corresponding service to return a list of flattened (single-level depth) alert dictionaries. The
+        dictionaries in the return list must have keys corresponding to the ``id`` values returned by this broker's
+        ``get_dash_columns()``. Method signature must correspond to the filter inputs returned by this broker's
+        ``get_callback_inputs()``.
+
+        :param page_current: The page number for the paginated alerts to display
+        :type page_current: int
+
+        :param page_size: The page size used for the pagination
+        :type page_size: int
+
+        All other args need to be specified in the concrete implementation.
+
+        :returns: list of 1-level depth alert dicts, with keys corresponding to return value of ``get_dash_columns()``
+        :rtype: list of dicts
+        """
         return
 
     def get_callback_inputs(self):
+        """
+        Method that provides broker-specific inputs intended to trigger this broker's callback function. Input names
+        must correspond with ``id`` properties specified in this broker's ``get_dash_filters()``.
+
+        Default implementation provides inputs for page number and page size. This method is technically not required
+        for concrete implementation, but omission would prevent an end user from filtering alerts.
+
+        :returns: list of inputs corresponding to dash filters for this broker
+        :rtype: list
+        """
         return [
             Input(f'alerts-table-{self.name}', 'page_current'),
             Input(f'alerts-table-{self.name}', 'page_size')
@@ -71,11 +102,36 @@ class GenericDashBroker(GenericBroker):
 
     @abstractmethod
     def get_dash_filters(self):
+        """
+        Method that provides the layout and input types for the filter inputs that are available for this broker. Please
+        consult the Plotly Dash documentation for specific properties of Dash components:
+        https://dash.plotly.com/dash-core-components
+
+        :returns: layout of Dash input components
+        :rtype: dash_html_components.Div        
+        """
         pass
 
     @abstractmethod
     def get_dash_columns(self):
+        """
+        Provides the columns that will be displayed in the broker-specific Dash DataTable. Columns must follow the
+        format specified in the Dash DataTable documentation: https://dash.plotly.com/datatable/reference
+
+        :returns: columns for display in DataTable
+        :rtype: list of dicts
+        """
         pass
 
     def flatten_dash_alerts(self, alerts):
+        """
+        Transforms a list of alerts returned by a broker query into a list of single-level depth dictionaries for
+        display in a Dash DataTable. Also handles any further transformation of the data returned by a broker query.
+
+        :param alerts: list of alerts from a broker query
+        :type alerts: list
+
+        :returns: list of single-level depth dicts
+        :rtype: list of dicts
+        """
         pass

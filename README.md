@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/TOMToolkit/tom_alerts_dash.svg?branch=main)](https://travis-ci.com/TOMToolkit/tom_alerts_dash)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/e003f03e2820481e9206d6b18eef3d92)](https://www.codacy.com/gh/TOMToolkit/tom_alerts_dash/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TOMToolkit/tom_alerts_dash&amp;utm_campaign=Badge_Grade)
+[![Coverage Status](https://coveralls.io/repos/github/TOMToolkit/tom_alerts_dash/badge.svg?branch=main)](https://coveralls.io/github/TOMToolkit/tom_alerts_dash?branch=main)
+
 # tom_alerts_dash
 This module supplements the `tom_alerts` module with [Plotly Dash](https://plotly.com/dash/) support for more responsive broker views.
 

@@ -1,3 +1,5 @@
+import logging
+
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -9,11 +11,32 @@ from django.shortcuts import reverse
 
 from tom_alerts_dash.alerts import get_service_class, get_service_classes
 
+# This module creates the browseable alert tables for the supported brokers. It does so by creating a Dash container for
+# each registered broker in settings.py. The containers include a redirection container, a create-targets button, a set
+# of broker-specific filter inputs, and a DataTable. The containers are set to {display: none;} on load with no alerts
+# in them. A callback is registered that listens to a dropdown allowing the user to select a broker--when the broker
+# selection changes, the corresponding broker container is displayed. Additionally, a callback is registered for each
+# broker, with the broker-specific filters as the inputs, and the broker-specific DataTable as the output. Finally, a
+# callback is registered for each broker with the broker-specific create-targets button and selected rows as the input,
+# and the broker-specific redirection container as the output.
+
+logger = logging.getLogger(__name__)
 
 app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOOTSTRAP], add_bootstrap_links=True)
 
 
-def create_datatable(broker):
+def create_broker_container(broker):
+    """
+    This method creates the container with the broker-specific components. It is hidden by default. The components are
+    a redirection container, a series of filter input components, a create-targets button, and a Dash DataTable. Each
+    component id includes the name of the broker, in order to distinguish it for use in a specific callback function.
+
+    :param broker: The name of the broker class for which to create a container
+    :type broker: str
+
+    :returns: The container with the redirection, filter inputs, button, and DataTable
+    :rtype: dhc.Div
+    """
     broker_class = get_service_class(broker)()
     return dhc.Div(children=[
         dhc.Div(
@@ -75,44 +98,65 @@ def create_datatable(broker):
 
 app.layout = dbc.Container([
     dhc.Div([
-        dhc.Div(
-            id='redirection'
-        ),
-        dhc.Div(
+        dhc.Div(  # Create an initial header. This div will be replaced by the broker_selection callback
             dhc.H3('View Alerts for a Broker'),
             id='page-header'
         ),
         dhc.Div(children=[
+            # Hidden component to store the currently selected broker. This is used for the create_targets callback.
             dcc.Input(id='broker-state', type='hidden', value=''),
             dhc.P(
-                dcc.Dropdown(
+                dcc.Dropdown(  # Dropdown component to select the active broker
                     id='broker-selection',
                     placeholder='Select Broker',
                     options=[{'label': clazz, 'value': clazz} for clazz in get_service_classes().keys()]
                 )
             )
         ]),
-        dhc.Div(  # Alerts datatable goes here
-            children=[create_datatable(class_name) for class_name in get_service_classes().keys()],
+        dhc.Div(  # Creates a container for each broker
+            children=[create_broker_container(class_name) for class_name in get_service_classes().keys()],
         ),
     ])
 ])
 
 
 def create_targets(create_targets, selected_rows, row_data, broker_state):
-    print(f'create targets callback: {broker_state}')
-    if create_targets:
+    """
+    Create TOM Toolkit target objects for each selected target for the current broker. Callback is triggered by a click
+    of the broker-specific create-targets-{broker_name} button. Upon clicking, the callback gets the current-selected
+    rows in the broker-specific DataTable and calls ``tom_alerts.alerts.to_target`` on each one.
+
+    This fires on page load, but should not. However, the ``prevent_initial_call`` kwargs does not appear to work in
+    django-plotly-dash.
+
+    :param create_targets: Number of times the create-targets button has been clicked.
+    :type create_targets: int
+
+    :param selected_rows: indices of rows selected in the DataTable. As a State value, this does not trigger callback.
+    :type selected_rows: list
+
+    :param row_data: Data currently displayed in the DataTable. As a State value, this does not trigger callback.
+    :type row_data: list of dicts
+
+    :param broker_state: Currently selected broker. As a State value, this does not trigger callback.
+    :type broker_state: str
+    """
+    logger.info(f'Entering create targets callback for broker: {broker_state}')
+    # Ensure the create-targets button has actually been clicked and that there are selected rows
+    if create_targets and selected_rows:
         broker_class = get_service_class(broker_state)()
         errors = []
         successes = []
         for row in selected_rows:
-            target = broker_class.to_target(row_data[row]['alert'])
+            target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
             if target:
                 successes.append(target.name)  # TODO: How to indicate successes?
             else:
                 errors.append(target.name)  # TODO: How to handle errors?
             # NOTE: an option for handling success/error: put the alert into this view, redirect here, but
             # add a link to go to the target list in the success message
+            # NOTE: if expanded_callbacks are used, the successes can go as messages into the request, but this will
+            # mess with the signatures for all other callbacks
 
         if successes:
             return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
@@ -120,8 +164,6 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
         raise PreventUpdate
 
 
-# NOTE: hidden datatables/input should be created for each broker, along with corresponding callbacks, on init
-# NOTE: change in broker selection hides current table and shows the new one, and update the broker-state value
 @app.callback(
     [Output('broker-state', 'value'), Output('page-header', 'children')] +
     [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
@@ -129,50 +171,81 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
     [State('broker-state', 'value')]
 )
 def broker_selection_callback(broker_selection, broker_state):
-    print(broker_selection)
-    print(broker_state)
+    """
+    Callback triggered by a selection of the broker dropdown. The callback also takes the previously selected broker.
+    The outputs are the broker state container, the header displaying which broker alerts are being viewed,
+    and an output bound to the style property of each broker container.
+
+    If the broker selection did not change from the previously selected broker, no update occurs.
+
+    If the broker selection did change, the following events occur:
+    - The newly selected broker is added to the return values in order to update the broker-state component
+    - A new dhc.H3 element with the correct broker display name is added to the return values
+    - A style property is added to the return values for each broker container. The style property is
+      {'display': 'none'} for all brokers save the selected broker, which instead is {'display': 'block'}. This will
+      hide all containers except the one for the selected broker.
+
+    :param broker_selection: The newly selected broker
+    :type broker_selection: str
+
+    :param broker_state: The previously selected broker. As a State value, a value change does not trigger the callback.
+    :type broker_state: str
+
+    :returns: The value of the newly selected broker
+    :rtype: str
+
+    :returns: A header showing the name of the newly selected broker
+    :rtype: dash_html_component.H3
+
+    :returns: A CSS style dictionary for each broker, either {'display': 'none'} or {'display': 'block'}
+    :rtype: dict
+
+    :raises: PreventUpdate when the newly selected broker does not change
+    """
     callback_return_values = ()
-    if broker_selection and broker_selection != broker_state:
+    if broker_selection and broker_selection != broker_state:  # Broker selection has changed
 
         # Modify page header to display correct broker name
         page_header = dhc.H3(f'{broker_selection} Alerts')
+
+        # Add the newly selected broker and new page_header to the return tuple
         callback_return_values += (broker_selection, page_header)
 
         # Hide all DataTables other than the one that corresponds with the selected broker
         for clazz in get_service_classes().keys():
-            if broker_selection == clazz:
+            if broker_selection == clazz:  # newly selected broker should be displayed
                 callback_return_values += ({'display': 'block'},)
-            else:
+            else:  # all other brokers should be hidden
                 callback_return_values += ({'display': 'none'},)
 
-        # for callback in app._callback_sets:
-        #     print(callback)
-        #     print()
-
-        print(callback_return_values)
         return callback_return_values
-    else:
-        raise PreventUpdate
+    else:  # Broker selection has not changed from previous value
+        raise PreventUpdate  # Don't update any components
 
 
-# TODO TODO: Add all broker callbacks to the app callbacks on init, and construct the alerts table
+# Add all broker-specific callbacks to the app callbacks on init, and construct the alerts table
 # dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
 # this is the only way to support different callbacks per broker.
+#
+# There are two broker-specific callbacks per broker. The first is a callback that fires on a change in any
+# broker-specific inputs and updates the data in the broker-specific DataTable. The second fires on a click of the
+# broker-specific create-targets button and updates the broker-specific location container in order to redirect the
+# user.
 for class_name in get_service_classes().keys():
     broker_class = get_service_class(class_name)()
-    table_callback = app.callback(
+    table_callback = app.callback(  # Create the broker-specific filters callback
         Output(f'alerts-table-{class_name}', 'data'),
         # TODO: Should the broker handle this, or this class?
         # [Input(f'alerts-table-{class_name}', 'page_current'), Input(f'alerts-table-{class_name}', 'page_size')] +
         broker_class.get_callback_inputs()
     )
-    table_callback(broker_class.callback)
+    table_callback(broker_class.callback)  # Instantiate the broker-specific filters callback
 
-    create_targets_callback = app.callback(
+    create_targets_callback = app.callback(  # Create the broker-specific create-targets callback
         Output(f'redirection-{class_name}', 'children'),
-        [Input(f'create-targets-btn-{class_name}', 'n_clicks'),
-         Input(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
-         Input(f'alerts-table-{class_name}', 'derived_virtual_data')],
-        [State('broker-state', 'value')]
+        [Input(f'create-targets-btn-{class_name}', 'n_clicks')],
+        [State(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
+         State(f'alerts-table-{class_name}', 'derived_virtual_data'),
+         State('broker-state', 'value')]
     )
-    create_targets_callback(create_targets)
+    create_targets_callback(create_targets)  # Create the broker-specific create-targets callback
