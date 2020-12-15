@@ -10,7 +10,6 @@ from tom_alerts.alerts import GenericBroker
 DEFAULT_ALERT_CLASSES = [
     'tom_alerts_dash.brokers.mars.MARSDashBroker',
     'tom_alerts_dash.brokers.alerce.ALeRCEDashBroker',
-    'tom_alerts_dash.brokers.scimma.SCIMMADashBroker',
 ]
 
 
