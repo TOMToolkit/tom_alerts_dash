@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOOTSTRAP], add_bootstrap_links=True)
 
 
-def create_targets(create_targets, selected_rows, row_data, broker_state):
+def create_targets(create_targets, selected_rows, row_data, broker_state, toasts_state):
     """
     Create TOM Toolkit target objects for each selected target for the current broker. Callback is triggered by a click
     of the broker-specific create-targets-{broker_name} button. Upon clicking, the callback gets the current-selected
@@ -45,28 +45,34 @@ def create_targets(create_targets, selected_rows, row_data, broker_state):
 
     :param broker_state: Currently selected broker. As a State value, this does not trigger callback.
     :type broker_state: str
+
+    :param toasts_state: Currently displayed toasts. As a State value, this does not trigger callback.
+    :type toasts_state: list of dbc.Toast
     """
     logger.info(f'Entering create targets callback for broker: {broker_state}')
     # Ensure the create-targets button has actually been clicked and that there are selected rows
     if create_targets and selected_rows:
         broker_class = get_service_class(broker_state)()
-        errors = []
-        successes = []
+        toasts = toasts_state
         for row in selected_rows:
-            target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
-            if target:
-                successes.append(target.name)  # TODO: How to indicate successes?
-            else:
-                errors.append(row_data[row]['alert'])  # TODO: How to handle errors?
-            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but
-            # add a link to go to the target list in the success message
-            # NOTE: if expanded_callbacks are used, the successes can go as messages into the request, but this will
-            # mess with the signatures for all other callbacks
+            try:
+                target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
+                target_url = reverse('targets:detail', kwargs={'pk': target.id})
+                toasts.append(
+                    dbc.Toast(
+                        dhc.A('View Target', href=target_url),
+                        header=f'Successfully created {target.name}!',
+                        is_open=True, dismissable=True, duration=5000, icon='success'
+                    )
+                )
+            except Exception:
+                logger.error(f'Unable to create target from alert {row_data[row]["alert"]}.')
+                toasts.append(dbc.Toast(f'Unable to create target from alert.',  # TODO: how to give the alert name?
+                                        is_open=True, dismissable=True, icon='danger'))
 
-        if successes:
-            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
-
-    raise PreventUpdate
+        return toasts
+    else:
+        raise PreventUpdate
 
 
 def create_broker_callbacks():
@@ -90,16 +96,14 @@ def create_broker_callbacks():
         table_callback(broker_class.callback)  # Instantiate the broker-specific filters callback
 
         create_targets_callback = app.callback(  # Create the broker-specific create-targets callback
-            Output(f'redirection-{class_name}', 'children'),
+            Output(f'toasts-container-{class_name}', 'children'),
             [Input(f'create-targets-btn-{class_name}', 'n_clicks')],
             [State(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
              State(f'alerts-table-{class_name}', 'derived_virtual_data'),
-             State('broker-state', 'value')]
+             State('broker-state', 'value'),
+             State(f'toasts-container-{class_name}', 'children')]
         )
         create_targets_callback(create_targets)  # Create the broker-specific create-targets callback
-
-
-create_broker_callbacks()
 
 
 def create_broker_container(broker):
@@ -117,7 +121,9 @@ def create_broker_container(broker):
     broker_class = get_service_class(broker)()
     return dhc.Div(children=[
         dhc.Div(
-            id=f'redirection-{broker}'
+            children=[],
+            style={'position': 'fixed', 'top': 65, 'right': 10},
+            id=f'toasts-container-{broker}'
         ),
         dcc.Loading(children=[
             dhc.Div(
@@ -171,30 +177,6 @@ def create_broker_container(broker):
             )
         ], id=f'alerts-loading-container-{broker}'),
     ], id=f'alerts-container-{broker}', style={'display': 'none'})
-
-
-app.layout = dbc.Container([
-    dhc.Div([
-        dhc.Div(  # Create an initial header. This div will be replaced by the broker_selection callback
-            dhc.H3('View Alerts for a Broker'),
-            id='page-header'
-        ),
-        dhc.Div(children=[
-            # Hidden component to store the currently selected broker. This is used for the create_targets callback.
-            dcc.Input(id='broker-state', type='hidden', value=''),
-            dhc.P(
-                dcc.Dropdown(  # Dropdown component to select the active broker
-                    id='broker-selection',
-                    placeholder='Select Broker',
-                    options=[{'label': clazz, 'value': clazz} for clazz in get_service_classes().keys()]
-                )
-            )
-        ]),
-        dhc.Div(  # Creates a container for each broker
-            children=[create_broker_container(class_name) for class_name in get_service_classes().keys()],
-        ),
-    ])
-])
 
 
 # TODO: def save_query_callback(button_click, *args):
@@ -257,3 +239,29 @@ def broker_selection_callback(broker_selection, broker_state):
         return callback_return_values
     else:  # Broker selection has not changed from previous value
         raise PreventUpdate  # Don't update any components
+
+
+create_broker_callbacks()
+
+app.layout = dbc.Container([
+    dhc.Div([
+        dhc.Div(  # Create an initial header. This div will be replaced by the broker_selection callback
+            dhc.H3('View Alerts for a Broker'),
+            id='page-header'
+        ),
+        dhc.Div(children=[
+            # Hidden component to store the currently selected broker. This is used for the create_targets callback.
+            dcc.Input(id='broker-state', type='hidden', value=''),
+            dhc.P(
+                dcc.Dropdown(  # Dropdown component to select the active broker
+                    id='broker-selection',
+                    placeholder='Select Broker',
+                    options=[{'label': clazz, 'value': clazz} for clazz in get_service_classes().keys()]
+                )
+            )
+        ]),
+        dhc.Div(  # Creates a container for each broker
+            children=[create_broker_container(class_name) for class_name in get_service_classes().keys()],
+        ),
+    ])
+])
