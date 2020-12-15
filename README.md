@@ -89,3 +89,7 @@ Finally, add the following two new paths to your base `urls.py`:
 ```
 
 Please note that the path with the namespace `tom_alerts_dash` MUST be placed above the `tom_common.urls` in order to properly override the default `tom_alerts` paths.
+
+## Creating a custom Dash broker module
+
+For information on writing your own Dash broker module, please see the [TOM Toolkit documentation](https://tom-toolkit.readthedocs.io/en/stable/brokers/create_dash_broker.html) on Dash broker modules.

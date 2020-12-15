@@ -7,7 +7,6 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='tom-alerts-dash',
-    version='1.0.0',
     description='Plotly Dash-based broker app for the TOM Toolkit',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -26,8 +25,10 @@ setup(
     ],
     keywords=['tomtoolkit', 'astronomy', 'astrophysics', 'cosmology', 'science', 'fits', 'observatory'],
     packages=find_packages(),
+    use_scm_version=True,
+    setup_requires=['setuptools_scm', 'wheel'],
     install_requires=[
-        'tomtoolkit>=2.0.1',
+        'tomtoolkit>=2.1.0',
         'django_plotly_dash==1.4.2',
         'dash-bootstrap-components==0.10.3',
         'whitenoise==5.2.0',
@@ -35,9 +36,8 @@ setup(
         'django-bootstrap4',
     ],
     extras_require={
-        'scimma': ['tom-scimma'],
-        'antares': ['tom-antares'],
-        'test': ['tom-scimma', 'tom-antares', 'factory_boy']
+        'scimma': ['tom-scimma>=1.1.0'],
+        'test': ['tom-scimma', 'factory_boy']
     },
     include_package_data=True,
 )
