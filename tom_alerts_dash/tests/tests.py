@@ -67,27 +67,30 @@ class TestQueryListApp(TestCase):
 
     def test_create_broker_container(self):
         broker_container = create_broker_container('Test Broker')
-        for key in ['redirection-Test Broker', 'create-targets-btn-Test Broker', 'alerts-table-Test Broker']:
+        for key in ['toasts-container-Test Broker', 'create-targets-btn-Test Broker', 'alerts-table-Test Broker']:
             self.assertIn(key, broker_container)
         self.assertEqual(broker_container.style, {'display': 'none'})
 
+    @patch('tom_alerts_dash.dash_apps.query_list_app.reverse')
     @patch('tom_alerts_dash.tests.tests.TestDashBroker.to_target')
-    def test_create_targets(self, mock_to_target):
-        params = [('', [1, 2], [], 'Test Broker'), (1, [], [], 'Test Broker')]
+    def test_create_targets(self, mock_to_target, mock_reverse):
+        mock_reverse.return_value = 'http://localhost:8000/targets/1/'
+
+        params = [('', [1, 2], [], 'Test Broker', []), (1, [], [], 'Test Broker', [])]
         for param in params:
             with self.subTest():
                 with self.assertRaises(PreventUpdate):
                     create_targets(*param)
 
         mock_to_target.side_effect = lambda target: target
-        rows = [{'alert': Target(name='test1')}, {'alert': None}]
+        rows = [{'alert': Target(id=1, name='test1')}, {'alert': None}]
         with self.subTest():
-            location = create_targets(1, [0], rows, 'Test Broker')
-            self.assertEqual(location.pathname, reverse('targets:list'))
+            toasts = create_targets(1, [0], rows, 'Test Broker', [])
+            self.assertIn(toasts[0].header, 'Successfully created test1!')
 
         with self.subTest():
-            with self.assertRaises(PreventUpdate):
-                create_targets(1, [1], rows, 'Test Broker')
+            toasts = create_targets(1, [1], rows, 'Test Broker', [])
+            self.assertIn(toasts[0].children, 'Unable to create target from alert.')
 
     def test_broker_selection_callback(self):
         params = [('', ''), ('Test Broker', 'Test Broker')]
