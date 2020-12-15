@@ -25,6 +25,83 @@ logger = logging.getLogger(__name__)
 app = DjangoDash('BrokerQueryListViewDash', external_stylesheets=[dbc.themes.BOOTSTRAP], add_bootstrap_links=True)
 
 
+def create_targets(create_targets, selected_rows, row_data, broker_state):
+    """
+    Create TOM Toolkit target objects for each selected target for the current broker. Callback is triggered by a click
+    of the broker-specific create-targets-{broker_name} button. Upon clicking, the callback gets the current-selected
+    rows in the broker-specific DataTable and calls ``tom_alerts.alerts.to_target`` on each one.
+
+    This fires on page load, but should not. However, the ``prevent_initial_call`` kwargs does not appear to work in
+    django-plotly-dash.
+
+    :param create_targets: Number of times the create-targets button has been clicked.
+    :type create_targets: int
+
+    :param selected_rows: indices of rows selected in the DataTable. As a State value, this does not trigger callback.
+    :type selected_rows: list
+
+    :param row_data: Data currently displayed in the DataTable. As a State value, this does not trigger callback.
+    :type row_data: list of dicts
+
+    :param broker_state: Currently selected broker. As a State value, this does not trigger callback.
+    :type broker_state: str
+    """
+    logger.info(f'Entering create targets callback for broker: {broker_state}')
+    # Ensure the create-targets button has actually been clicked and that there are selected rows
+    if create_targets and selected_rows:
+        broker_class = get_service_class(broker_state)()
+        errors = []
+        successes = []
+        for row in selected_rows:
+            target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
+            if target:
+                successes.append(target.name)  # TODO: How to indicate successes?
+            else:
+                errors.append(row_data[row]['alert'])  # TODO: How to handle errors?
+            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but
+            # add a link to go to the target list in the success message
+            # NOTE: if expanded_callbacks are used, the successes can go as messages into the request, but this will
+            # mess with the signatures for all other callbacks
+
+        if successes:
+            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
+
+    raise PreventUpdate
+
+
+def create_broker_callbacks():
+    """
+    Add all broker-specific callbacks to the app callbacks on init, and construct the alerts table
+    dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
+    this is the only way to support different callbacks per broker.
+
+    There are two broker-specific callbacks per broker. The first is a callback that fires on a change in any
+    broker-specific inputs and updates the data in the broker-specific DataTable. The second fires on a click of the
+    broker-specific create-targets button and updates the broker-specific location container in order to redirect the
+    user.
+    """
+
+    for class_name in get_service_classes().keys():
+        broker_class = get_service_class(class_name)()
+        table_callback = app.callback(  # Create the broker-specific filters callback
+            Output(f'alerts-table-{class_name}', 'data'),
+            broker_class.get_callback_inputs()
+        )
+        table_callback(broker_class.callback)  # Instantiate the broker-specific filters callback
+
+        create_targets_callback = app.callback(  # Create the broker-specific create-targets callback
+            Output(f'redirection-{class_name}', 'children'),
+            [Input(f'create-targets-btn-{class_name}', 'n_clicks')],
+            [State(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
+             State(f'alerts-table-{class_name}', 'derived_virtual_data'),
+             State('broker-state', 'value')]
+        )
+        create_targets_callback(create_targets)  # Create the broker-specific create-targets callback
+
+
+create_broker_callbacks()
+
+
 def create_broker_container(broker):
     """
     This method creates the container with the broker-specific components. It is hidden by default. The components are
@@ -120,48 +197,7 @@ app.layout = dbc.Container([
 ])
 
 
-def create_targets(create_targets, selected_rows, row_data, broker_state):
-    """
-    Create TOM Toolkit target objects for each selected target for the current broker. Callback is triggered by a click
-    of the broker-specific create-targets-{broker_name} button. Upon clicking, the callback gets the current-selected
-    rows in the broker-specific DataTable and calls ``tom_alerts.alerts.to_target`` on each one.
-
-    This fires on page load, but should not. However, the ``prevent_initial_call`` kwargs does not appear to work in
-    django-plotly-dash.
-
-    :param create_targets: Number of times the create-targets button has been clicked.
-    :type create_targets: int
-
-    :param selected_rows: indices of rows selected in the DataTable. As a State value, this does not trigger callback.
-    :type selected_rows: list
-
-    :param row_data: Data currently displayed in the DataTable. As a State value, this does not trigger callback.
-    :type row_data: list of dicts
-
-    :param broker_state: Currently selected broker. As a State value, this does not trigger callback.
-    :type broker_state: str
-    """
-    logger.info(f'Entering create targets callback for broker: {broker_state}')
-    # Ensure the create-targets button has actually been clicked and that there are selected rows
-    if create_targets and selected_rows:
-        broker_class = get_service_class(broker_state)()
-        errors = []
-        successes = []
-        for row in selected_rows:
-            target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
-            if target:
-                successes.append(target.name)  # TODO: How to indicate successes?
-            else:
-                errors.append(target.name)  # TODO: How to handle errors?
-            # NOTE: an option for handling success/error: put the alert into this view, redirect here, but
-            # add a link to go to the target list in the success message
-            # NOTE: if expanded_callbacks are used, the successes can go as messages into the request, but this will
-            # mess with the signatures for all other callbacks
-
-        if successes:
-            return dcc.Location(pathname=reverse('tom_targets:list'), id='dash-location')
-    else:
-        raise PreventUpdate
+# TODO: def save_query_callback(button_click, *args):
 
 
 @app.callback(
@@ -221,31 +257,3 @@ def broker_selection_callback(broker_selection, broker_state):
         return callback_return_values
     else:  # Broker selection has not changed from previous value
         raise PreventUpdate  # Don't update any components
-
-
-# Add all broker-specific callbacks to the app callbacks on init, and construct the alerts table
-# dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
-# this is the only way to support different callbacks per broker.
-#
-# There are two broker-specific callbacks per broker. The first is a callback that fires on a change in any
-# broker-specific inputs and updates the data in the broker-specific DataTable. The second fires on a click of the
-# broker-specific create-targets button and updates the broker-specific location container in order to redirect the
-# user.
-for class_name in get_service_classes().keys():
-    broker_class = get_service_class(class_name)()
-    table_callback = app.callback(  # Create the broker-specific filters callback
-        Output(f'alerts-table-{class_name}', 'data'),
-        # TODO: Should the broker handle this, or this class?
-        # [Input(f'alerts-table-{class_name}', 'page_current'), Input(f'alerts-table-{class_name}', 'page_size')] +
-        broker_class.get_callback_inputs()
-    )
-    table_callback(broker_class.callback)  # Instantiate the broker-specific filters callback
-
-    create_targets_callback = app.callback(  # Create the broker-specific create-targets callback
-        Output(f'redirection-{class_name}', 'children'),
-        [Input(f'create-targets-btn-{class_name}', 'n_clicks')],
-        [State(f'alerts-table-{class_name}', 'derived_virtual_selected_rows'),
-         State(f'alerts-table-{class_name}', 'derived_virtual_data'),
-         State('broker-state', 'value')]
-    )
-    create_targets_callback(create_targets)  # Create the broker-specific create-targets callback

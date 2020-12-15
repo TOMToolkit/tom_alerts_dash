@@ -108,7 +108,7 @@ class GenericDashBroker(GenericBroker):
         https://dash.plotly.com/dash-core-components
 
         :returns: layout of Dash input components
-        :rtype: dash_html_components.Div        
+        :rtype: dash_html_components.Div
         """
         pass
 

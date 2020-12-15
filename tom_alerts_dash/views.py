@@ -7,9 +7,5 @@ class BrokerQueryBrowseView(TemplateView):
     template_name = 'tom_alerts_dash/brokerquery_browse.html'
 
 
-class RunQueryView(TemplateView):
-    template_name = 'tom_alerts_dash/brokerquery_browse.html'
-
-
 class BrokerQueryListView(BrokerQueryListView):
     template_name = 'tom_alerts_dash/brokerquery_list.html'

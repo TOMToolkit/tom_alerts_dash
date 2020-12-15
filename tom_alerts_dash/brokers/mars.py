@@ -98,7 +98,7 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         Returns MARS-specific filter inputs layout
 
         :returns: layout of Dash input components
-        :rtype: dash_html_components.Div 
+        :rtype: dash_html_components.Div
         """
         filters = dhc.Div([
             dbc.Row([

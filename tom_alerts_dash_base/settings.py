@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'tom_alerts_dash',
     'tom_alerts',
+    'tom_common',
     'tom_targets',
     'tom_observations',
     'tom_dataproducts',
@@ -130,6 +131,8 @@ USE_TZ = True
 
 
 EXTRA_FIELDS = []
+
+TOM_FACILITY_CLASSES = []
 
 
 # Static files (CSS, JavaScript, Images)
