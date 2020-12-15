@@ -57,7 +57,6 @@ def create_targets(create_targets, selected_rows, row_data, broker_state, toasts
         for row in selected_rows:
             try:
                 target = broker_class.to_target(row_data[row]['alert'])  # Get the data for each selected row
-                print(f'target: {target}')
                 target_url = reverse('targets:detail', kwargs={'pk': target.id})
                 toasts.append(
                     dbc.Toast(
@@ -67,7 +66,6 @@ def create_targets(create_targets, selected_rows, row_data, broker_state, toasts
                     )
                 )
             except Exception as e:
-                print(e)
                 logger.error(f'Unable to create target from alert {row_data[row]["alert"]} due to exception {e}.')
                 toasts.append(dbc.Toast(f'Unable to create target from alert.',  # TODO: how to give the alert name?
                                         is_open=True, dismissable=True, duration=5000, icon='danger'))
