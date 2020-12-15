@@ -17,29 +17,13 @@ class TestSCIMMADashBroker(TestCase):
         self.test_alerts = [create_scimma_alert() for i in range(0, 5)]
 
     def test_flatten_dash_alerts(self):
-        flattened_alerts = self.broker.flatten_dash_alerts(self.test_alerts)
+        test_alert = create_scimma_alert()
+        flattened_alerts = self.broker.flatten_dash_alerts([test_alert])
         for key in ['alert_identifier', 'counterpart_identifier', 'ra', 'dec', 'rank', 'comments']:
             self.assertIn(key, flattened_alerts[0])
         for key in ['topic', 'test_bad_key']:
             self.assertNotIn(key, flattened_alerts[0])  # Test that no unwanted attributes are included
 
-        # TODO: refactor to move test_callback assertion up here
-
-    def test_callback_partial_cone_search(self):
-        with self.assertRaises(PreventUpdate):
-            self.broker.callback(1, 20, '', '', '100', None, None, None, None)
-
-    @patch('tom_scimma.scimma.SCIMMABroker._request_alerts')
-    def test_callback_full_cone_search(self, mock_request_alerts):
-        mock_request_alerts.return_value = {'results': self.test_alerts}
-        self.broker.callback(1, 20, '', '', '100', '100', '100', None, None)
-        self.assertDictContainsSubset({'cone_search': '100,100,100'}, mock_request_alerts.call_args.args[0])
-
-    @patch('tom_scimma.scimma.SCIMMABroker._request_alerts')
-    def test_callback(self, mock_request_alerts):
-        test_alert = create_scimma_alert()
-        mock_request_alerts.return_value = {'results': [test_alert]}
-        alerts = self.broker.callback(1, 20, '', 'test_keyword', None, None, None, None, None)
         expected_url = f'https://gracedb.ligo.org/superevents/{test_alert["message"]["event_trig_num"]}/view/'
         self.assertDictContainsSubset(
             {'alert_identifier': f'[{test_alert["alert_identifier"]}]({expected_url})',
@@ -49,7 +33,22 @@ class TestSCIMMADashBroker(TestCase):
              'rank': test_alert['message']['rank'],
              'comments': test_alert['extracted_fields']['comment_warnings'],
              'alert': test_alert},
-            alerts[0])
+            flattened_alerts[0])
+
+    def test_callback_partial_cone_search(self):
+        with self.assertRaises(PreventUpdate):
+            self.broker.callback(1, 20, '', '', '100', None, None, None, None)
+
+    @patch('tom_scimma.scimma.SCIMMABroker._request_alerts')
+    def test_callback_full_cone_search(self, mock_request_alerts):
+        mock_request_alerts.return_value = {'results': self.test_alerts}
+        alerts = self.broker.callback(1, 20, '', '', '100', '100', '100', None, None)
+
+        self.assertDictContainsSubset({'cone_search': '100,100,100'}, mock_request_alerts.call_args.args[0])
+        for key in ['alert_identifier', 'counterpart_identifier', 'ra', 'dec', 'rank', 'comments']:
+            self.assertIn(key, alerts[0])
+        for key in ['topic', 'test_bad_key']:
+            self.assertNotIn(key, alerts[0])  # Test that no unwanted attributes are included
 
     def test_callback_parameters_match_inputs(self):
         """Test that callback function has the same number of parameters as the inputs."""

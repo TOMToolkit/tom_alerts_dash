@@ -181,9 +181,6 @@ def create_broker_container(broker):
     ], id=f'alerts-container-{broker}', style={'display': 'none'})
 
 
-# TODO: def save_query_callback(button_click, *args):
-
-
 @app.callback(
     [Output('broker-state', 'value'), Output('page-header', 'children')] +
     [Output(f'alerts-container-{clazz}', 'style') for clazz in get_service_classes().keys()],
