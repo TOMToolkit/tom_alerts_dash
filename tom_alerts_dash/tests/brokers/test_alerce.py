@@ -21,7 +21,6 @@ class TestALeRCEDashBroker(TestCase):
             'late': [{'name': 'AGN-I', 'id': 7}, {'name': 'Blazar', 'id': 8}]
         }
 
-
     @patch('tom_alerts.brokers.alerce.ALeRCEQueryForm._get_classifiers')
     def test_flatten_dash_alerts(self, mock_get_classifiers):
         mock_get_classifiers.return_value = self.mock_classifiers
