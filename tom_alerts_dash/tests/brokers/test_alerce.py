@@ -78,7 +78,13 @@ class TestALeRCEDashBroker(TestCase):
         inputs = self.broker.get_callback_inputs()
         self.assertEqual(callback_num_params, len(inputs))
 
-    # TODO: write test for filter input validation
+    def test_validate_filters(self):
+        with self.assertRaises(PreventUpdate):
+            self.broker.validate_filters(1, 20, None, None, None, None, None, 100, '', '', None, [])
+
+        errors = self.broker.validate_filters(1, 20, None, None, None, None, None, 100, '', '', 10, [])
+        self.assertIn('__all__: All of RA, Dec, and Search Radius must be included to execute a cone search.',
+                      errors[0].children)
 
     def test_inputs_match_filters(self):
         callback_inputs = self.broker.get_callback_inputs()

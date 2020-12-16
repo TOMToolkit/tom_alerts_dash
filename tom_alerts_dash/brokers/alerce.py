@@ -258,9 +258,6 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :param oid: ZTF objectId to search for
         :type oid: string
 
-        :param ra: Right Ascension to use in cone search
-        :type ra: string
-
         :param classearly: Stamp classification to filter by
         :param classearly: string
 
@@ -272,6 +269,9 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
 
         :param pclassrf: Probability of light curve classification specified by classrf filter
         :param pclassrf: string
+
+        :param ra: Right Ascension to use in cone search
+        :type ra: string
 
         :param dec: Declination to use in cone search
         :type dec: string

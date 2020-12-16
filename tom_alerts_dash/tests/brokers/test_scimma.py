@@ -50,13 +50,15 @@ class TestSCIMMADashBroker(TestCase):
         for key in ['topic', 'test_bad_key']:
             self.assertNotIn(key, alerts[0])  # Test that no unwanted attributes are included
 
+    def test_validate_filters(self):
+        errors = self.broker.validate_filters(1, 20, '', '', '100', None, None, None, None, [])
+        self.assertIn('All of RA, Dec, and Radius are required for a cone search.', errors[0].children)
+
     def test_callback_parameters_match_inputs(self):
         """Test that callback function has the same number of parameters as the inputs."""
         callback_num_params = len(signature(self.broker.callback).parameters)
         inputs = self.broker.get_callback_inputs()
         self.assertEqual(callback_num_params, len(inputs))
-
-    # TODO: write test for filter input validation
 
     def test_inputs_match_filters(self):
         callback_inputs = self.broker.get_callback_inputs()
