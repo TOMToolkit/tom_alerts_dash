@@ -50,3 +50,5 @@ class TestMARSDashBroker(TestCase):
         callback_num_params = len(signature(self.broker.callback).parameters)
         inputs = self.broker.get_callback_inputs()
         self.assertEqual(callback_num_params, len(inputs))
+
+    # TODO: write test matching inputs with filters

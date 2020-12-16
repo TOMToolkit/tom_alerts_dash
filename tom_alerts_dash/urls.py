@@ -1,6 +1,8 @@
 from django.urls import path
 
-from tom_alerts_dash import dash  # noqa - this import is necessary for Dash to run
+# This import is necessary for Dash to run, likely because it imports and runs the staticfiles finders
+# as defined in settings.STATICFILES_FINDERS
+from tom_alerts_dash import dash  # noqa
 from tom_alerts_dash.views import BrokerQueryBrowseView, BrokerQueryListView
 
 app_name = 'tom_alerts_dash'

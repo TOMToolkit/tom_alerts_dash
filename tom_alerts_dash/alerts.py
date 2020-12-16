@@ -2,6 +2,7 @@ from abc import abstractmethod
 from importlib import import_module
 
 from dash.dependencies import Input
+from dash.exceptions import PreventUpdate
 from django.conf import settings
 
 from tom_alerts.alerts import GenericBroker
@@ -81,7 +82,7 @@ class GenericDashBroker(GenericBroker):
         :returns: list of 1-level depth alert dicts, with keys corresponding to return value of ``get_dash_columns()``
         :rtype: list of dicts
         """
-        return
+        raise PreventUpdate
 
     def get_callback_inputs(self):
         """
@@ -127,10 +128,16 @@ class GenericDashBroker(GenericBroker):
         Transforms a list of alerts returned by a broker query into a list of single-level depth dictionaries for
         display in a Dash DataTable. Also handles any further transformation of the data returned by a broker query.
 
+        Each flattened alert should also include a key/value pair of {'alert': original_alert}, to be used when
+        creating a target from the alert.
+
         :param alerts: list of alerts from a broker query
         :type alerts: list
 
         :returns: list of single-level depth dicts
         :rtype: list of dicts
         """
-        pass
+        return alerts
+
+    def validate_filters(self, page_current, page_size, errors_state):
+        raise PreventUpdate

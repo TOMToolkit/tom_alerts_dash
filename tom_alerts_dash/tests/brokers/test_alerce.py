@@ -9,7 +9,6 @@ from tom_alerts_dash.brokers.alerce import ALeRCEDashBroker
 from tom_alerts_dash.tests.factories import create_alerce_alert, SiderealTargetFactory
 
 
-# TODO: Prevent tests from calling ALeRCEQueryForm._get_classifiers()
 class TestALeRCEDashBroker(TestCase):
 
     def setUp(self):

@@ -64,10 +64,13 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :raises: PreventUpdate exception if some but not all cone search parameters are submitted
         """
         logger.info('Entering ALeRCE callback...')
+        errors = self.validate_filters(page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra,
+                                       dec, sr, button_click, [])
+
         # Dash does not return the state of a button, but rather the number of clicks. To determine if the callback was
         # triggered by a new button click, the broker tracks the number of clicks, and we check that it has changed
         # before querying ALeRCE.
-        if not button_click or button_click == self.dash_button_clicks:
+        if not button_click or button_click == self.dash_button_clicks or errors:
             raise PreventUpdate
         else:
             self.dash_button_clicks = button_click
@@ -237,3 +240,7 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                 'alert': alert
             })
         return flattened_alerts
+
+    def validate_filters(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
+                         button_click, errors_state):
+        return []

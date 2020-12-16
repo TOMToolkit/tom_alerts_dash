@@ -67,7 +67,7 @@ class TestQueryListApp(TestCase):
 
     def test_create_broker_container(self):
         broker_container = create_broker_container('Test Broker')
-        for key in ['toasts-container-Test Broker', 'create-targets-btn-Test Broker', 'alerts-table-Test Broker']:
+        for key in ['create-targets-btn-Test Broker', 'alerts-table-Test Broker']:
             self.assertIn(key, broker_container)
         self.assertEqual(broker_container.style, {'display': 'none'})
 
@@ -85,12 +85,12 @@ class TestQueryListApp(TestCase):
         mock_to_target.side_effect = lambda target: target
         rows = [{'alert': Target(id=1, name='test1')}, {'alert': None}]
         with self.subTest():
-            toasts = create_targets(1, [0], rows, 'Test Broker', [])
-            self.assertIn(toasts[0].header, 'Successfully created test1!')
+            messages = create_targets(1, [0], rows, 'Test Broker', [])
+            self.assertIn('Successfully created ', messages[0].children)
 
         with self.subTest():
-            toasts = create_targets(1, [1], rows, 'Test Broker', [])
-            self.assertIn(toasts[0].children, 'Unable to create target from alert.')
+            messages = create_targets(1, [1], rows, 'Test Broker', [])
+            self.assertIn('Unable to create target from alert.', messages[0].children)
 
     def test_broker_selection_callback(self):
         params = [('', ''), ('Test Broker', 'Test Broker')]

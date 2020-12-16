@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 GRACE_DB_URL = 'https://gracedb.ligo.org'
 
 
-# TODO: how will this jive with tom_scimma as a non-default?
-# TODO: should external apps have pip "extras" such as `pip install tom_alerts_dash[scimma]`?
-# TODO: or should tom_scimma be a dependency of tom_alerts_dash?
 class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
+
+    def validate_filters(self, page_current, page_size, event_trigger_number, keyword, cone_ra, cone_dec, cone_radius,
+                         start_date, end_date, errors_state):
+        return []
 
     def callback(self, page_current, page_size, event_trigger_number, keyword, cone_ra, cone_dec, cone_radius,
                  start_date, end_date):

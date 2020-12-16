@@ -52,13 +52,14 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         :raises: PreventUpdate exception if some but not all cone search parameters are submitted
         """
         logger.info('Entering MARS callback...')
-        cone_search = ''
-        if any([cone_ra, cone_dec, cone_radius]):
-            if all([cone_ra, cone_dec, cone_radius]):
-                cone_search = ','.join([cone_ra, cone_dec, cone_radius])
-            else:
-                raise PreventUpdate
+        errors = self.validate_filters(page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte,
+                                       rb_gte, [])
+        if errors:
+            raise PreventUpdate
 
+        cone_search = ''
+        if all([cone_ra, cone_dec, cone_radius]):
+            cone_search = ','.join([cone_ra, cone_dec, cone_radius])
         form = MARSQueryForm({
             'query_name': 'dash query',
             'broker': self.name,
@@ -182,3 +183,30 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
                 'alert': alert
             })
         return flattened_alerts
+
+    def validate_filters(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte, rb_gte,
+                         errors_state):
+        errors = []
+
+        cone_search = ''
+        if any([cone_ra, cone_dec, cone_radius]):
+            if all([cone_ra, cone_dec, cone_radius]):
+                cone_search = ','.join([cone_ra, cone_dec, cone_radius])
+            else:
+                errors.append('All of RA, Dec, and Radius are required for a cone search.')
+
+        form = MARSQueryForm({
+            'query_name': 'dash query',
+            'broker': self.name,
+            'objectId': objectId,
+            'magpsf__lte': magpsf_lte,
+            'rb__gte': rb_gte,
+            'cone': cone_search
+        })
+        form.is_valid()
+
+        errors += form.errors
+        for error in errors:
+            errors_state.append(dbc.Alert(error, dismissable=True, is_open=True, duration=5000, color='warning'))
+
+        return errors_state
