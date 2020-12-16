@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/TOMToolkit/tom_alerts_dash.svg?branch=main)](https://travis-ci.com/TOMToolkit/tom_alerts_dash)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/e003f03e2820481e9206d6b18eef3d92)](https://www.codacy.com/gh/TOMToolkit/tom_alerts_dash/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TOMToolkit/tom_alerts_dash&amp;utm_campaign=Badge_Grade)
+[![Coverage Status](https://coveralls.io/repos/github/TOMToolkit/tom_alerts_dash/badge.svg?branch=main)](https://coveralls.io/github/TOMToolkit/tom_alerts_dash?branch=main)
+
 # tom_alerts_dash
 This module supplements the `tom_alerts` module with [Plotly Dash](https://plotly.com/dash/) support for more responsive broker views.
 
@@ -85,3 +89,7 @@ Finally, add the following two new paths to your base `urls.py`:
 ```
 
 Please note that the path with the namespace `tom_alerts_dash` MUST be placed above the `tom_common.urls` in order to properly override the default `tom_alerts` paths.
+
+## Creating a custom Dash broker module
+
+For information on writing your own Dash broker module, please see the [TOM Toolkit documentation](https://tom-toolkit.readthedocs.io/en/stable/brokers/create_dash_broker.html) on Dash broker modules.

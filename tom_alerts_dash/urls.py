@@ -1,12 +1,13 @@
 from django.urls import path
 
-from tom_alerts_dash import dash
-from tom_alerts_dash.views import BrokerQueryBrowseView, BrokerQueryListView, RunQueryView
+# This import is necessary for Dash to run, likely because it imports and runs the staticfiles finders
+# as defined in settings.STATICFILES_FINDERS
+from tom_alerts_dash import dash  # noqa
+from tom_alerts_dash.views import BrokerQueryBrowseView, BrokerQueryListView
 
 app_name = 'tom_alerts_dash'
 
 urlpatterns = [
     path('query/list/', BrokerQueryListView.as_view(), name='list'),
     path('query/browse/', BrokerQueryBrowseView.as_view(), name='browse'),
-    path('query/<int:pk>/run', RunQueryView.as_view(), name='run')
 ]

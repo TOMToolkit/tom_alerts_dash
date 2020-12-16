@@ -38,10 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'django_comments',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
     'bootstrap4',
     'tom_alerts_dash',
     'tom_alerts',
+    'tom_common',
     'tom_targets',
     'tom_observations',
     'tom_dataproducts',
@@ -126,6 +128,11 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+
+EXTRA_FIELDS = []
+
+TOM_FACILITY_CLASSES = []
 
 
 # Static files (CSS, JavaScript, Images)
