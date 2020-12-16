@@ -12,13 +12,14 @@ from django.shortcuts import reverse
 from tom_alerts_dash.alerts import get_service_class, get_service_classes
 
 # This module creates the browseable alert tables for the supported brokers. It does so by creating a Dash container for
-# each registered broker in settings.py. The containers include a redirection container, a create-targets button, a set
+# each registered broker in settings.py. The containers include two messages containers, a create-targets button, a set
 # of broker-specific filter inputs, and a DataTable. The containers are set to {display: none;} on load with no alerts
 # in them. A callback is registered that listens to a dropdown allowing the user to select a broker--when the broker
 # selection changes, the corresponding broker container is displayed. Additionally, a callback is registered for each
-# broker, with the broker-specific filters as the inputs, and the broker-specific DataTable as the output. Finally, a
-# callback is registered for each broker with the broker-specific create-targets button and selected rows as the input,
-# and the broker-specific redirection container as the output.
+# broker, with the broker-specific filters as the inputs, and the broker-specific DataTable as the output. Finally, two
+# callbacks are registered for each broker for error or success messages. The first uses the broker-specific filters as
+# the inputs, and one of the two broker-specific messages containers as the output. The second uses the broker-specific
+# create-targets button as the input, and the other broker-specific messages container as the output.
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +81,11 @@ def create_broker_callbacks():
     dynamically, with a different id depending on the broker. As there's no way to remove callbacks,
     this is the only way to support different callbacks per broker.
 
-    There are two broker-specific callbacks per broker. The first is a callback that fires on a change in any
+    There are three broker-specific callbacks per broker. The first is a callback that fires on a change in any
     broker-specific inputs and updates the data in the broker-specific DataTable. The second fires on a click of the
-    broker-specific create-targets button and updates the broker-specific location container in order to redirect the
-    user.
+    broker-specific create-targets button and updates the broker-specific messages container in order to convey success
+    or failure of target creation. The third fires on any change in broker-specific inputs and validates the inputs,
+    then returns Alert objects to display to the user any validation errors.
     """
 
     for class_name in get_service_classes().keys():
@@ -94,7 +96,7 @@ def create_broker_callbacks():
         )
         table_callback(broker_class.callback)  # Instantiate the broker-specific filters callback
 
-        filter_validation_callback = app.callback(
+        filter_validation_callback = app.callback(  # Create the broker-specific filter validation callback
             Output(f'messages-filters-{class_name}', 'children'),
             broker_class.get_callback_inputs(),
             [State(f'messages-filters-{class_name}', 'children')]
@@ -243,7 +245,9 @@ create_broker_callbacks()
 
 app.layout = dbc.Container([
     dhc.Div(
+        # Messages containers for validation messages related to filter inputs
         [dhc.Div(children=[], id=f'messages-filters-{class_name}') for class_name in get_service_classes().keys()] +
+        # Messages containers for validation messages related to target creation
         [dhc.Div(children=[], id=f'messages-targets-{class_name}') for class_name in get_service_classes().keys()] +
         [
             dhc.Div(  # Create an initial header. This div will be replaced by the broker_selection callback

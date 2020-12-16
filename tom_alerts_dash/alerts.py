@@ -140,4 +140,24 @@ class GenericDashBroker(GenericBroker):
         return alerts
 
     def validate_filters(self, page_current, page_size, errors_state):
+        """
+        Validates the input filters for a broker module. The concrete implementation of this method must accept all
+        inputs returned from ``get_callback_inputs()``, as well as an ``errors_state`` as the last argument.
+
+        :param page_current: The page number for the paginated alerts to display
+        :type page_current: int
+
+        :param page_size: The page size used for the pagination
+        :type page_size: int
+
+        All broker-specific args need to be specified in the concrete implementation.
+
+        :param errors_state: The currently displayed errors relating to filters
+        :type errors_state: list of dbc.Alert objects
+
+        :returns: errors from validation of filters
+        :rtype: list of dbc.Alert objects
+
+        :raises: PreventUpdate
+        """
         raise PreventUpdate
