@@ -57,4 +57,18 @@ class TestSCIMMADashBroker(TestCase):
         self.assertEqual(callback_num_params, len(inputs))
 
     # TODO: write test for filter input validation
-    # TODO: write test matching inputs with filters
+
+    def test_inputs_match_filters(self):
+        callback_inputs = self.broker.get_callback_inputs()
+        dash_filters = self.broker.get_dash_filters()
+        for callback_input in callback_inputs:
+            if callback_input.component_property in ['page_current', 'page_size']:
+                continue
+            with self.subTest():
+                found = False
+                for row in dash_filters.children:
+                    for column in row.children:
+                        for input_obj in column:
+                            if input_obj == callback_input.component_id:
+                                found = True
+                self.assertTrue(found)

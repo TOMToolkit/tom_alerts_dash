@@ -239,8 +239,9 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         })
         form.is_valid()
 
-        # TODO: ensure form errors render properly
-        errors += form.errors
+        for field, field_errors in form.errors.items():
+            for field_error in field_errors.get_json_data():
+                errors.append(f'{field}: {field_error["message"]}')
 
         for error in errors:
             errors_state.append(dbc.Alert(error, dismissable=True, is_open=True, duration=5000, color='warning'))

@@ -293,9 +293,6 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         if not button_click or button_click == self.dash_button_clicks:
             raise PreventUpdate
 
-        if any([ra, dec, sr]) and not all([ra, dec, sr]):
-            errors.append('All of RA, Dec, and Radius are required for a cone search.')
-
         form = ALeRCEQueryForm({
             'query_name': 'ALeRCE Dash Query',
             'broker': self.name,
@@ -310,15 +307,9 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         })
         form.is_valid()
 
-        for e in form.errors:
-            print(e)
-
-        # TODO: ensure errors on required fields work as expected
-        # TODO: ensure these errors render properly, as well as in MARS/SCIMMA
-        for field, field_error in form.errors.items():
-            print(field, field_error)
-            errors.append(f'{field}: {field_error}')
-        print(form.errors)
+        for field, field_errors in form.errors.items():
+            for field_error in field_errors.get_json_data():
+                errors.append(f'{field}: {field_error["message"]}')
 
         for error in errors:
             errors_state.append(dbc.Alert(error, dismissable=True, is_open=True, duration=5000, color='warning'))
