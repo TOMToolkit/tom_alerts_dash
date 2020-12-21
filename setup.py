@@ -30,7 +30,7 @@ setup(
     install_requires=[
         'tomtoolkit>=2.1.0',
         'django_plotly_dash==1.4.2',
-        'dash-bootstrap-components==0.10.3',
+        'dash-bootstrap-components==0.11.1',
         'whitenoise==5.2.0',
         'dpd-static-support',
         'django-bootstrap4',
