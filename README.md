@@ -78,7 +78,7 @@ PLOTLY_COMPONENTS = [
 ]
 ```
 
-Finally, add the following two new paths to your base `urls.py`:
+Add the following two new paths to your base `urls.py`:
 
 ```python
     url_patterns = [
@@ -89,6 +89,12 @@ Finally, add the following two new paths to your base `urls.py`:
 ```
 
 Please note that the path with the namespace `tom_alerts_dash` MUST be placed above the `tom_common.urls` in order to properly override the default `tom_alerts` paths.
+
+Finally, run the following to run the `django-plotly-dash` migrations:
+
+```
+    ./manage.py migrate
+```
 
 ## Creating a custom Dash broker module
 
