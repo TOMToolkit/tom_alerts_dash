@@ -96,6 +96,53 @@ Finally, run the following to run the `django-plotly-dash` migrations:
     ./manage.py migrate
 ```
 
+## Using SCIMMA with tom_alerts_dash
+
+The `tom_scimma` [repo](https://github.com/TOMToolkit/tom_scimma) also includes `tom_alerts_dash` support. To install it into a TOM with `tom_alerts_dash` configured, the following steps are required.
+
+Install `tom_alerts_dash` with the `tom_scimma` dependency, in either of the following fashions:
+
+```
+    pip install tom_alerts_dash tom_scimma
+```
+or:
+```
+    pip install tom_alerts_dash[scimma]
+```
+
+Add the `TOM_ALERT_DASH_CLASSES` setting to your `settings.py`, along with the brokers that you want to include in your TOM:
+
+```python
+    TOM_ALERT_DASH_CLASSES = [
+        'tom_alerts_dash.brokers.mars.MARSDashBroker',
+        'tom_alerts_dash.brokers.alerce.ALeRCEDashBroker',
+        'tom_alerts_dash.brokers.scimma.SCIMMADashBroker'
+    ]
+```
+
+Add the SCIMMA settings specified in the `tom_scimma` README:
+
+```python
+    TOM_ALERT_CLASSES = [
+        ...
+        'tom_scimma.scimma.SCIMMABroker'
+    ]
+```
+
+```python
+    BROKERS = {
+        ...
+        'SCIMMA': {
+            'url': 'http://skip.dev.hop.scimma.org',
+            'api_key': os.getenv('SKIP_API_KEY', ''),
+            'hopskotch_url': 'dev.hop.scimma.org',
+            'hopskotch_username': os.getenv('HOPSKOTCH_USERNAME', ''),
+            'hopskotch_password': os.getenv('HOPSKOTCH_PASSWORD', ''),
+            'default_hopskotch_topic': ''
+        }
+    }
+```
+
 ## Creating a custom Dash broker module
 
 For information on writing your own Dash broker module, please see the [TOM Toolkit documentation](https://tom-toolkit.readthedocs.io/en/stable/brokers/create_dash_broker.html) on Dash broker modules.
