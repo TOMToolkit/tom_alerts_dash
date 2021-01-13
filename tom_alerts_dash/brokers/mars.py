@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 
 from dash.dependencies import Input
@@ -15,8 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class MARSDashBroker(MARSBroker, GenericDashBroker):
+    dash_button_clicks = 0
 
-    def callback(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte, rb_gte):
+    def callback(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte, rb_gte,
+                 start_date, end_date, button_click):
         """
         MARS-specific callback function for BrokerQueryBrowseView. Queries MARS based on parameters from DataTable
         inputs. The callback will not modify any bound components if one or more, but not all, cone search inputs are
@@ -46,6 +49,15 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         :param rb_gte: Minimum real-bogus score to filter by
         :param rb_gte: string
 
+        :param start_date: Earliest date to filter by
+        :param start_date: string
+
+        :param end_date: Latest date to filter by
+        :param end_date: string
+
+        :param button_click: Number of times the filter-button has been clicked
+        :param button_click: int
+
         :returns: list of flattened alerts
         :rtype: list of dicts
 
@@ -53,9 +65,12 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         """
         logger.info('Entering MARS callback...')
         errors = self.validate_filters(page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte,
-                                       rb_gte, [])
-        if errors:
+                                       rb_gte, start_date, end_date, button_click, [])
+
+        if not button_click or button_click == self.dash_button_clicks or errors:
             raise PreventUpdate
+        else:
+            self.dash_button_clicks = button_click
 
         cone_search = ''
         if all([cone_ra, cone_dec, cone_radius]):
@@ -66,6 +81,8 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             'objectId': objectId,
             'magpsf__lte': magpsf_lte,
             'rb__gte': rb_gte,
+            'time__gt': start_date,
+            'time__lt': end_date,
             'cone': cone_search
         })
         form.is_valid()
@@ -85,12 +102,15 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         """
         inputs = super().get_callback_inputs()
         inputs += [
-            Input('objname-search', 'value'),
-            Input('cone-ra', 'value'),
-            Input('cone-dec', 'value'),
-            Input('cone-radius', 'value'),
-            Input('magpsf-max', 'value'),
-            Input('rb-min', 'value'),
+            Input('mars-objname-search', 'value'),
+            Input('mars-cone-ra', 'value'),
+            Input('mars-cone-dec', 'value'),
+            Input('mars-cone-radius', 'value'),
+            Input('mars-magpsf-max', 'value'),
+            Input('mars-rb-min', 'value'),
+            Input('mars-date-filter', 'start_date'),
+            Input('mars-date-filter', 'end_date'),
+            Input('mars-trigger-filter-btn', 'n_clicks')
         ]
         return inputs
 
@@ -104,19 +124,19 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         filters = dhc.Div([
             dbc.Row([
                 dbc.Col(dcc.Input(
-                    id='objname-search',
+                    id='mars-objname-search',
                     type='text',
                     placeholder='Object Name Search',
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='magpsf-max',
+                    id='mars-magpsf-max',
                     type='number',
                     placeholder='Magnitude Maximum',
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='rb-min',
+                    id='mars-rb-min',
                     type='number',
                     placeholder='Real-Bogus Minimum',
                     debounce=True
@@ -124,24 +144,40 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
                 dbc.Col(dcc.Input(
-                    id='cone-ra',
+                    id='mars-cone-ra',
                     type='text',
                     placeholder='Right Ascension',
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='cone-dec',
+                    id='mars-cone-dec',
                     type='text',
                     placeholder='Declination',
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='cone-radius',
+                    id='mars-cone-radius',
                     type='text',
                     placeholder='Radius',
                     debounce=True
                 ), width=3)
-            ], style={'padding-bottom': '10px'}, justify='start')
+            ], style={'padding-bottom': '10px'}, justify='start'),
+            dbc.Row([
+                dbc.Col(dcc.DatePickerRange(
+                    id='mars-date-filter',
+                    min_date_allowed=datetime(2018, 1, 1),
+                    initial_visible_month=datetime.now(),
+                    clearable=True
+                ))
+            ], style={'padding-bottom': '10px'}, justify='start'),
+            dbc.Row([
+                dbc.Col(dbc.Button(
+                    'Filter',
+                    id='mars-trigger-filter-btn',
+                    outline=True,
+                    color='info'
+                )),
+            ], style={'padding-bottom': '10px'})
         ])
         return filters
 
@@ -185,7 +221,7 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
         return flattened_alerts
 
     def validate_filters(self, page_current, page_size, objectId, cone_ra, cone_dec, cone_radius, magpsf_lte, rb_gte,
-                         errors_state):
+                         start_date, end_date, button_click, errors_state):
         """
         Validates the input filters for MARS. Returns an error if one, but not all, of RA, Dec, and radius are submitted
         for cone search. Returns any errors generated by form validation.
@@ -235,6 +271,8 @@ class MARSDashBroker(MARSBroker, GenericDashBroker):
             'objectId': objectId,
             'magpsf__lte': magpsf_lte,
             'rb__gte': rb_gte,
+            'time__gt': start_date,
+            'time__lt': end_date,
             'cone': cone_search
         })
         form.is_valid()
