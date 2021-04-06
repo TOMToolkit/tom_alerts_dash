@@ -33,12 +33,12 @@ class TestMARSDashBroker(TestCase):
 
     def test_callback_partial_cone_search(self):
         with self.assertRaises(PreventUpdate):
-            self.broker.callback(1, 20, '', 100, None, None, None, None)
+            self.broker.callback(1, 20, '', 100, None, None, None, None, None, None, True)
 
     @patch('tom_alerts.brokers.mars.MARSBroker._request_alerts')
     def test_callback_full_cone_search(self, mock_request_alerts):
         mock_request_alerts.return_value = {'results': self.test_alerts}
-        alerts = self.broker.callback(1, 20, '', '100', '100', '100', None, None)
+        alerts = self.broker.callback(1, 20, '', '100', '100', '100', None, None, None, None, True)
         self.assertDictContainsSubset({'cone': '100,100,100'}, mock_request_alerts.call_args.args[0])
         for key in ['objectId', 'ra', 'dec', 'magpsf', 'rb']:
             self.assertIn(key, alerts[0])
@@ -46,7 +46,7 @@ class TestMARSDashBroker(TestCase):
             self.assertNotIn(key, alerts[0])  # Test that no unwanted attributes are included
 
     def test_validate_filters(self):
-        errors = self.broker.validate_filters(1, 20, '', 100, None, None, None, None, [])
+        errors = self.broker.validate_filters(1, 20, '', 100, None, None, None, None, None, None, None, [])
         self.assertIn('All of RA, Dec, and Radius are required for a cone search.', errors[0].children)
 
     def test_callback_parameters_match_inputs(self):
