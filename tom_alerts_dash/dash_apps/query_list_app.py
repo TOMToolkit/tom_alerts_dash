@@ -66,7 +66,7 @@ def create_targets(create_targets, selected_rows, row_data, broker_state, messag
             except Exception as e:
                 logger.error(f'Unable to create target from alert {row_data[row]["alert"]} due to exception {e}.')
                 messages.append(
-                    dbc.Alert(f'Unable to create target from alert.',  # TODO: how to give the alert name?
+                    dbc.Alert('Unable to create target from alert.',  # TODO: how to give the alert name?
                               color='danger', is_open=True, dismissable=True, duration=5000)
                 )
 
