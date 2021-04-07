@@ -81,7 +81,7 @@ class SCIMMADashBroker(SCIMMABroker, GenericDashBroker):
         form.is_valid()
 
         parameters = form.cleaned_data
-        parameters['topic'] = 3  # form isn't valid with both topic and event trigger number, so this circumvents that
+        parameters['topic'] = 6  # form isn't valid with both topic and event trigger number, so this circumvents that
         parameters['page'] = page_current + 1  # Dash pagination is 0-indexed, but Skip is 1-indexed
         parameters['page_size'] = page_size if page_size else 20  # 20 is the Dash default page size
         alerts = self._request_alerts(parameters)['results']
