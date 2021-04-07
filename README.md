@@ -1,3 +1,4 @@
+[![pypi](https://img.shields.io/pypi/v/tom-alerts-dash.svg)](https://pypi.python.org/pypi/tom-alerts-dash)
 [![run-tests](https://github.com/TOMToolkit/tom_alerts_dash/actions/workflows/run-tests.yml/badge.svg)](https://github.com/TOMToolkit/tom_alerts_dash/actions/workflows/run-tests.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e003f03e2820481e9206d6b18eef3d92)](https://www.codacy.com/gh/TOMToolkit/tom_alerts_dash/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TOMToolkit/tom_alerts_dash&amp;utm_campaign=Badge_Grade)
 [![Coverage Status](https://coveralls.io/repos/github/TOMToolkit/tom_alerts_dash/badge.svg?branch=main)](https://coveralls.io/github/TOMToolkit/tom_alerts_dash?branch=main)
