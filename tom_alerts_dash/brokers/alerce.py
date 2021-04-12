@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
     dash_button_clicks = 0
 
-    def callback(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
-                 button_click):
+    def callback(self, page_current, page_size, oid, stamp_classifier, p_stamp_classifier, lc_classifier,
+                 p_lc_classifier, ra, dec, radius, button_click):
         """
         ALeRCE-specific callback function for BrokerQueryBrowseView. Queries ALeRCE based on parameters from DataTable
         inputs. The callback will not trigger a query unless the "Filter" button is clicked, due to the fact that ALeRCE
@@ -37,23 +37,23 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :param ra: Right Ascension to use in cone search
         :type ra: string
 
-        :param classearly: Stamp classification to filter by
-        :param classearly: string
+        :param stamp_classifier: Stamp classification to filter by
+        :param stamp_classifier: string
 
-        :param pclassearly: Probability of stamp classification specified by classrf filter
-        :param pclassearly: string
+        :param p_stamp_classifier: Probability of stamp classification specified by stamp_classifier filter
+        :param p_stamp_classifier: string
 
-        :param classrf: Light curve classification to filter by
-        :param classrf: string
+        :param lc_classifier: Light curve classification to filter by
+        :param lc_classifier: string
 
-        :param pclassrf: Probability of light curve classification specified by classrf filter
-        :param pclassrf: string
+        :param p_lc_classifier: Probability of light curve classification specified by lc_classifier filter
+        :param p_lc_classifier: string
 
         :param dec: Declination to use in cone search
         :type dec: string
 
-        :param sr: Radius to use in cone search, in degrees
-        :type sr: string
+        :param radius: Radius to use in cone search, in degrees
+        :type radius: string
 
         :param button_click: Number of times the filter-button has been clicked
         :param button_click: int
@@ -64,8 +64,8 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :raises: PreventUpdate exception if some but not all cone search parameters are submitted
         """
         logger.info('Entering ALeRCE callback...')
-        errors = self.validate_filters(page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra,
-                                       dec, sr, button_click, [])
+        errors = self.validate_filters(page_current, page_size, oid, stamp_classifier, p_stamp_classifier,
+                                       lc_classifier, p_lc_classifier, ra, dec, radius, button_click, [])
 
         # Dash does not return the state of a button, but rather the number of clicks. To determine if the callback was
         # triggered by a new button click, the broker tracks the number of clicks, and we check that it has changed
@@ -79,20 +79,20 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             'query_name': 'ALeRCE Dash Query',
             'broker': self.name,
             'oid': oid,
-            'classearly': classearly,
-            'pclassearly': pclassearly,
-            'classrf': classrf,
-            'pclassrf': pclassrf,
+            'stamp_classifier': stamp_classifier,
+            'p_stamp_classifier': p_stamp_classifier,
+            'lc_classifier': lc_classifier,
+            'p_lc_classifier': p_lc_classifier,
             'ra': ra,
             'dec': dec,
-            'sr': sr
+            'radius': radius
         })
         form.is_valid()
         parameters = form.cleaned_data
         parameters['page'] = page_current + 1  # Dash pagination is 0-indexed, but Skip is 1-indexed
         parameters['records_per_pages'] = page_size if page_size else 20  # 20 is the Dash default page size
 
-        alerts = [alert_data for alert, alert_data in self._request_alerts(form.cleaned_data)['result'].items()]
+        alerts = [alert for alert in self._request_alerts(form.cleaned_data)['items']]
         return self.flatten_dash_alerts(alerts)
 
     def get_callback_inputs(self):
@@ -102,16 +102,17 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :returns: list of inputs corresponding to dash filters
         :rtype: list
         """
+
         inputs = super().get_callback_inputs()
         inputs += [
             Input('oid', 'value'),
-            Input('classearly', 'value'),
-            Input('pclassearly', 'value'),
-            Input('classrf', 'value'),
-            Input('pclassrf', 'value'),
+            Input('stamp_classifier', 'value'),
+            Input('p_stamp_classifier', 'value'),
+            Input('lc_classifier', 'value'),
+            Input('p_lc_classifier', 'value'),
             Input('ra', 'value'),
             Input('dec', 'value'),
-            Input('sr', 'value'),
+            Input('radius', 'value'),
             Input('trigger-filter-btn', 'n_clicks')
         ]
         return inputs
@@ -134,28 +135,28 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             ], style={'padding-bottom': '10px'}),
             dbc.Row([
                 dbc.Col(dcc.Dropdown(
-                    id='classearly',
-                    placeholder='Early Classifier',
+                    id='stamp_classifier',
+                    placeholder='Stamp Classifier',
                     options=[{'label': classifier[1], 'value': classifier[0]}
-                             for classifier in ALeRCEQueryForm.early_classifier_choices()
+                             for classifier in ALeRCEQueryForm._get_stamp_classifier_choices()
                              if classifier[0] is not None]
                 )),
                 dbc.Col(dcc.Input(
-                    id='pclassearly',
+                    id='p_stamp_classifier',
                     type='number',
-                    placeholder='Early Classifier Probability',
+                    placeholder='Stamp Classifier Probability',
                 )),
                 dbc.Col(dcc.Dropdown(
-                    id='classrf',
-                    placeholder='Late Classifier',
+                    id='lc_classifier',
+                    placeholder='Light Curve Classifier',
                     options=[{'label': classifier[1], 'value': classifier[0]}
-                             for classifier in ALeRCEQueryForm.late_classifier_choices()
+                             for classifier in ALeRCEQueryForm._get_light_curve_classifier_choices()
                              if classifier[0] is not None]
                 )),
                 dbc.Col(dcc.Input(
-                    id='pclassrf',
+                    id='p_lc_classifier',
                     type='number',
-                    placeholder='Late Classifier Probability',
+                    placeholder='Light Curve Classifier Probability',
                 )),
             ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
@@ -172,9 +173,9 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
                     debounce=True
                 ), width=3),
                 dbc.Col(dcc.Input(
-                    id='sr',
+                    id='radius',
                     type='text',
-                    placeholder='Search Radius',
+                    placeholder='Search Radius (arcseconds)',
                 ), width=3)
             ], style={'padding-bottom': '10px'}, justify='start'),
             dbc.Row([
@@ -201,8 +202,8 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             {'id': 'meandec', 'name': 'Declination', 'type': 'text'},
             {'id': 'discovery_date', 'name': 'Discovery Date', 'type': 'datetime'},
             {'id': 'classifier', 'name': 'Class', 'type': 'text'},
-            {'id': 'classifier_type', 'name': 'Classifier Type', 'type': 'text'},
-            {'id': 'classifier_probability', 'name': 'Classifier Probability', 'type': 'text'},
+            {'id': 'class', 'name': 'Classifier Type', 'type': 'text'},
+            {'id': 'probability', 'name': 'Classifier Probability', 'type': 'text'},
         ]
 
     def flatten_dash_alerts(self, alerts):
@@ -221,30 +222,20 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         flattened_alerts = []
         for alert in alerts:
             url = f'{ALERCE_URL}/object/{alert["oid"]}'
-            if alert['pclassrf']:
-                classifier_suffix = 'classrf'
-                classifier_type = 'late'
-            else:
-                classifier_suffix = 'classearly'
-                classifier_type = 'early'
-            classifier_name = ''
-            for classifier_dict in ALeRCEQueryForm._get_classifiers()[classifier_type]:
-                if classifier_dict['id'] == alert[classifier_suffix]:
-                    classifier_name = classifier_dict['name']
             flattened_alerts.append({
                 'oid': f'[{alert["oid"]}]({url})',
                 'meanra': deg_to_sexigesimal(alert['meanra'], 'hms') if alert['meanra'] else None,
                 'meandec': deg_to_sexigesimal(alert['meandec'], 'dms') if alert['meandec'] else None,
                 'discovery_date': Time(alert['firstmjd'], format='mjd', scale='utc').to_datetime(),
-                'classifier': classifier_name,
-                'classifier_type': 'Stamp' if classifier_suffix == 'classearly' else 'Light Curve',
-                'classifier_probability': truncate_number(alert[f'p{classifier_suffix}']),
+                'class': alert['class'],
+                'classifier': alert['classifier'],
+                'probability': truncate_number(alert['probability']),
                 'alert': alert
             })
         return flattened_alerts
 
-    def validate_filters(self, page_current, page_size, oid, classearly, pclassearly, classrf, pclassrf, ra, dec, sr,
-                         button_click, errors_state):
+    def validate_filters(self, page_current, page_size, oid, stamp_classifier, p_stamp_classifier, lc_classifier,
+                         p_lc_classifier, ra, dec, radius, button_click, errors_state):
         """
         Validates the input filters for ALeRCE. Returns an error if one, but not all, of RA, Dec, and radius are
         submitted for cone search. Returns any errors generated by form validation.
@@ -258,17 +249,17 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :param oid: ZTF objectId to search for
         :type oid: string
 
-        :param classearly: Stamp classification to filter by
-        :param classearly: string
+        :param stamp_classifier: Stamp classification to filter by
+        :param stamp_classifier: string
 
-        :param pclassearly: Probability of stamp classification specified by classrf filter
-        :param pclassearly: string
+        :param p_stamp_classifier: Probability of stamp classification specified by stamp_classifier filter
+        :param p_stamp_classifier: string
 
-        :param classrf: Light curve classification to filter by
-        :param classrf: string
+        :param lc_classifier: Light curve classification to filter by
+        :param lc_classifier: string
 
-        :param pclassrf: Probability of light curve classification specified by classrf filter
-        :param pclassrf: string
+        :param p_lc_classifier: Probability of light curve classification specified by lc_classifier filter
+        :param p_lc_classifier: string
 
         :param ra: Right Ascension to use in cone search
         :type ra: string
@@ -276,8 +267,8 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
         :param dec: Declination to use in cone search
         :type dec: string
 
-        :param sr: Radius to use in cone search, in degrees
-        :type sr: string
+        :param radius: Radius to use in cone search, in degrees
+        :type radius: string
 
         :param button_click: Number of times the filter-button has been clicked
         :param button_click: int
@@ -297,13 +288,13 @@ class ALeRCEDashBroker(ALeRCEBroker, GenericDashBroker):
             'query_name': 'ALeRCE Dash Query',
             'broker': self.name,
             'oid': oid,
-            'classearly': classearly,
-            'pclassearly': pclassearly,
-            'classrf': classrf,
-            'pclassrf': pclassrf,
+            'stamp_classifier': stamp_classifier,
+            'p_stamp_classifier': p_stamp_classifier,
+            'lc_classifier': lc_classifier,
+            'p_lc_classifier': p_lc_classifier,
             'ra': ra,
             'dec': dec,
-            'sr': sr
+            'radius': radius
         })
         form.is_valid()
 

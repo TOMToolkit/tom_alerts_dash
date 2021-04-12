@@ -28,7 +28,7 @@ setup(
     use_scm_version=True,
     setup_requires=['setuptools_scm', 'wheel'],
     install_requires=[
-        'tomtoolkit>=2.1.0',
+        'tomtoolkit>=2.6.3',
         'django_plotly_dash==1.4.2',
         'dash-bootstrap-components==0.10.3',
         'whitenoise==5.2.0',
