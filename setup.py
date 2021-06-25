@@ -29,8 +29,9 @@ setup(
     setup_requires=['setuptools_scm', 'wheel'],
     install_requires=[
         'tomtoolkit>=2.6.3',
-        'django_plotly_dash==1.4.2',
+        'django_plotly_dash==1.6.4',
         'dash-bootstrap-components==0.12.2',
+        'dash-bootstrap-components==0.10.3',
         'whitenoise==5.2.0',
         'dpd-static-support',
         'django-bootstrap4',
